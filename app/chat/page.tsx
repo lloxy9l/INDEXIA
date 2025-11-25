@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,20 @@ export default function ChatPage() {
   ]
   const [selectedModel, setSelectedModel] = useState(models[0])
   const [open, setOpen] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleTextareaInput = () => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = "auto"
+    const nextHeight = Math.min(el.scrollHeight, 240)
+    el.style.height = `${nextHeight}px`
+    el.style.overflowY = el.scrollHeight > nextHeight ? "auto" : "hidden"
+  }
+
+  useEffect(() => {
+    handleTextareaInput()
+  }, [])
 
   return (
     <div className="bg-background text-foreground flex min-h-svh">
@@ -27,15 +41,15 @@ export default function ChatPage() {
           <IconMenu className="h-4 w-4" />
           Conversations
         </div>
-        <button className="text-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition">
+        <button className="text-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
           <span className="text-lg">+</span>
           Nouveau chat
         </button>
         <div className="flex flex-col gap-2">
-          <button className="flex items-center rounded-xl bg-background px-3 py-2 text-sm font-medium shadow-sm transition">
+          <button className="flex items-center rounded-xl bg-background px-3 py-2 text-sm font-medium shadow-sm transition cursor-pointer">
             Essai 1
           </button>
-          <button className="text-muted-foreground hover:bg-background flex items-center rounded-xl px-3 py-2 text-sm transition">
+          <button className="text-muted-foreground hover:bg-background flex items-center rounded-xl px-3 py-2 text-sm transition cursor-pointer">
             Essai 2
           </button>
         </div>
@@ -61,12 +75,14 @@ export default function ChatPage() {
             unoptimized
           />
         </div>
-        <Card className="w-[840px] max-w-full rounded-3xl border border-border/70 bg-white shadow-sm">
-          <CardContent className="flex flex-col gap-4 px-6 py-0">
+          <Card className="w-[840px] max-w-full rounded-3xl border border-border/70 bg-white shadow-sm">
+            <CardContent className="flex flex-col gap-1 px-6 py-1">
             <textarea
               rows={1}
-              placeholder="Ask, search, or make anything..."
-              className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none"
+              ref={textareaRef}
+              onInput={handleTextareaInput}
+              placeholder="Demandez, cherchez ou faites ce que vous voulez..."
+              className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
             />
 
             <div className="flex items-center gap-4">
@@ -74,7 +90,7 @@ export default function ChatPage() {
                 <button
                   type="button"
                   onClick={() => setOpen((v) => !v)}
-                  className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted"
+                  className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted cursor-pointer"
                 >
                   <Image
                     src={selectedModel.icon}
@@ -102,7 +118,7 @@ export default function ChatPage() {
                                 setSelectedModel(model)
                                 setOpen(false)
                               }}
-                              className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted"
+                              className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted cursor-pointer"
                             >
                               <Image
                                 src={model.icon}
@@ -125,7 +141,7 @@ export default function ChatPage() {
               </div>
               <Button
                 size="icon"
-                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90"
+                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer"
               >
                 <IconArrowUp className="h-10 w-10" />
               </Button>
