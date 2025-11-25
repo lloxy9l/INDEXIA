@@ -11,6 +11,7 @@ type UserRecord = {
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "auth.db")
+const AUTH_COOKIE_NAME = "auth_state"
 
 async function readUsers(): Promise<UserRecord[]> {
   try {
@@ -27,6 +28,17 @@ async function readUsers(): Promise<UserRecord[]> {
 
 function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex")
+}
+
+function authResponse(body: unknown, status: number, email: string) {
+  const response = NextResponse.json(body, { status })
+  response.cookies.set(AUTH_COOKIE_NAME, JSON.stringify({ email, loggedIn: true }), {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7, // 7 jours
+    path: "/",
+  })
+  return response
 }
 
 export async function POST(request: Request) {
@@ -60,7 +72,7 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({ message: "Connexion réussie.", email })
+    return authResponse({ message: "Connexion réussie.", email }, 200, email)
   } catch (error) {
     console.error("Login error", error)
     return NextResponse.json(

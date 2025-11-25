@@ -11,6 +11,7 @@ type UserRecord = {
 }
 
 const DB_PATH = path.join(process.cwd(), "data", "auth.db")
+const AUTH_COOKIE_NAME = "auth_state"
 
 async function readUsers(): Promise<UserRecord[]> {
   try {
@@ -33,6 +34,17 @@ async function writeUsers(users: UserRecord[]) {
 
 function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex")
+}
+
+function authResponse(body: unknown, status: number, email: string) {
+  const response = NextResponse.json(body, { status })
+  response.cookies.set(AUTH_COOKIE_NAME, JSON.stringify({ email, loggedIn: true }), {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7, // 7 jours
+    path: "/",
+  })
+  return response
 }
 
 export async function POST(request: Request) {
@@ -74,10 +86,7 @@ export async function POST(request: Request) {
     users.push(newUser)
     await writeUsers(users)
 
-    return NextResponse.json(
-      { message: "Compte créé avec succès.", email },
-      { status: 201 }
-    )
+    return authResponse({ message: "Compte créé avec succès.", email }, 201, email)
   } catch (error) {
     console.error("Signup error", error)
     return NextResponse.json(

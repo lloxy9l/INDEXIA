@@ -38,7 +38,7 @@ export function SignupForm({
 
   useEffect(() => {
     if (status.type === "success") {
-      const to = setTimeout(() => router.push("/login"), 1500)
+      const to = setTimeout(() => router.push("/chat"), 1500)
       return () => clearTimeout(to)
     }
   }, [status.type, router])

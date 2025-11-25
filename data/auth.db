@@ -3,5 +3,10 @@
     "email": "a@a.a",
     "passwordHash": "1f3ce40415a2081fa3eee75fc39fff8e56c22270d1a978a7249b592dcebd20b4",
     "createdAt": "2025-11-25T10:13:35.358Z"
+  },
+  {
+    "email": "z@z.z",
+    "passwordHash": "c129db8be8904b40ac21c9cf5d9f5c0e24ef455d1d7a7bbfd7049fc6dc9d2429",
+    "createdAt": "2025-11-25T10:40:01.301Z"
   }
 ]
