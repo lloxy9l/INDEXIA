@@ -1,8 +1,16 @@
 import Image from "next/image"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 import { LoginForm } from "@/components/login-form"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const cookieStore = await cookies()
+  const authCookie = cookieStore.get("auth_state")
+  if (authCookie?.value) {
+    redirect("/chat")
+  }
+
   const logoSrc = "/logo.png"
 
   return (
