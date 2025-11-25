@@ -83,18 +83,21 @@ export function SignupForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      {status.type ? (
-        <div
-          className={cn(
-            "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md px-4 py-3 text-sm shadow-lg transition-opacity",
-            status.type === "error"
-              ? "bg-destructive text-destructive-foreground"
-              : "bg-emerald-600 text-white"
-          )}
-        >
-          {status.message}
-        </div>
-      ) : null}
+      <div
+        className={cn(
+          "pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-4 py-3 text-sm shadow-lg transition-all duration-300 ease-out",
+          status.type
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 translate-y-2 scale-95",
+          status.type === "error"
+            ? "bg-destructive text-white"
+            : status.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-transparent text-transparent shadow-none"
+        )}
+      >
+        {status.message}
+      </div>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={onSubmit}>
@@ -151,7 +154,7 @@ export function SignupForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Création..." : "Créer un compte"}
+                  {isLoading ? "Création du compte..." : "Créer un compte"}
                 </Button>
               </Field>
               <FieldDescription className="text-center">
