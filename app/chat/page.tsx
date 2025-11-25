@@ -1,4 +1,7 @@
+"use client"
+
 import type React from "react"
+import { useState } from "react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -7,14 +10,15 @@ import { Card, CardContent } from "@/components/ui/card"
 export default function ChatPage() {
   const logoSrc = "/logo.png"
   const models = [
-    { value: "gpt-4o-mini", label: "GPT 4o-mini", icon: "[GPT]" },
-    { value: "deepseek-r1", label: "Deepseek R1", icon: "[DS]" },
-    { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet", icon: "[CL]" },
-    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash", icon: "[GM]" },
-    { value: "llama-3-8b", label: "Llama 3 8b", icon: "[LL]" },
-    { value: "firefunction-v2", label: "Firefunction V2", icon: "[FW]" },
-    { value: "mistral-7b", label: "Mistral 7b", icon: "[MS]" },
+    { value: "gpt-4o-mini", label: "GPT 4o-mini", icon: "/icon-chatgpt.jpg" },
+    { value: "deepseek-r1", label: "Deepseek R1", icon: "/icon-deepseek.jpg" },
+    { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet", icon: "/icon-claude-ai.jpg" },
+    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash", icon: "/icon-gemini-ai.jpg" },
+    { value: "llama-3-8b", label: "Llama 3 8b", icon: "/icon-meta.jpg" },
+    { value: "mistral-7b", label: "Mistral 7b", icon: "/icon-mistral.png" },
   ]
+  const [selectedModel, setSelectedModel] = useState(models[0])
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="bg-background text-foreground flex min-h-svh">
@@ -66,20 +70,64 @@ export default function ChatPage() {
             />
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-foreground/80">
-                <select className="border-border text-sm rounded-3xl border bg-transparent px-2 py-2 pr-4 outline-none">
-                  {models.map((model) => (
-                    <option key={model.value} value={model.value}>
-                      {model.icon} {model.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setOpen((v) => !v)}
+                  className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted"
+                >
+                  <Image
+                    src={selectedModel.icon}
+                    alt={selectedModel.label}
+                    width={18}
+                    height={18}
+                    className="rounded"
+                  />
+                  <span>{selectedModel.label}</span>
+                </button>
+                {open && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="border-border bg-background absolute left-0 top-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
+                      <ul className="flex flex-col divide-y divide-border/70">
+                        {models.map((model) => (
+                          <li key={model.value}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedModel(model)
+                                setOpen(false)
+                              }}
+                              className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted"
+                            >
+                              <Image
+                                src={model.icon}
+                                alt={model.label}
+                                width={18}
+                                height={18}
+                                className="rounded"
+                              />
+                              <span className="flex-1 text-left">{model.label}</span>
+                              {selectedModel.value === model.value ? (
+                                <span className="text-xs text-primary">●</span>
+                              ) : null}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
               </div>
               <Button
                 size="icon"
-                className="ml-auto h-10 w-10 rounded-full bg-black text-white hover:bg-black/90"
+                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90"
               >
-                <IconArrowUp className="h-8 w-8" />
+                <IconArrowUp className="h-10 w-10" />
               </Button>
             </div>
           </CardContent>
