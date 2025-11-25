@@ -11,6 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useState } from "react"
 
 export function SignupForm({
@@ -25,22 +26,22 @@ export function SignupForm({
     message: string
   }>({ type: null, message: "" })
   const [isLoading, setIsLoading] = useState(false)
-  const [statusTimeout, setStatusTimeout] = useState<
-    ReturnType<typeof setTimeout> | null
-  >(null)
+  const router = useRouter()
 
   useEffect(() => {
-    if (status.type) {
-      if (statusTimeout) clearTimeout(statusTimeout)
-      const timeoutId = setTimeout(() => {
-        setStatus({ type: null, message: "" })
-      }, 3500)
-      setStatusTimeout(timeoutId)
-    }
-    return () => {
-      if (statusTimeout) clearTimeout(statusTimeout)
-    }
+    if (!status.type) return
+    const timeoutId = setTimeout(() => {
+      setStatus({ type: null, message: "" })
+    }, 3500)
+    return () => clearTimeout(timeoutId)
   }, [status.type, status.message])
+
+  useEffect(() => {
+    if (status.type === "success") {
+      const to = setTimeout(() => router.push("/login"), 1500)
+      return () => clearTimeout(to)
+    }
+  }, [status.type, router])
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -53,6 +54,7 @@ export function SignupForm({
     setStatus({ type: null, message: "" })
 
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
