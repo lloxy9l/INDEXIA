@@ -1007,6 +1007,13 @@ export default function ChatPage() {
         variant="inset"
         className="min-h-[calc(100vh-var(--header-height))]"
       >
+        {actionMenuChatId && (
+          <div
+            className="fixed inset-0 z-20"
+            onClick={() => setActionMenuChatId(null)}
+            aria-hidden="true"
+          />
+        )}
         <SidebarHeader className="pb-2 pt-4">
           <SidebarMenu>
             <SidebarMenuItem>
@@ -1121,20 +1128,24 @@ export default function ChatPage() {
                         <IconChat className="h-4 w-4" />
                         <span className="truncate">{chat.title || "Sans titre"}</span>
                       </button>
-                      <div className="relative">
-                        <button
-                          className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setActionMenuChatId((prev) => (prev === chat.id ? null : chat.id))
+                    <div className="relative z-50" data-chat-actions>
+                      <button
+                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActionMenuChatId((prev) => (prev === chat.id ? null : chat.id))
                           }}
-                          aria-label="Actions du chat"
-                        >
-                          <IconMore className="h-4 w-4" />
-                        </button>
-                        {actionMenuChatId === chat.id && (
-                          <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
-                            <button
+                        aria-label="Actions du chat"
+                        data-chat-actions
+                      >
+                        <IconMore className="h-4 w-4" />
+                      </button>
+                      {actionMenuChatId === chat.id && (
+                              <div
+                                className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg"
+                                data-chat-actions
+                              >
+                                <button
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -1373,21 +1384,25 @@ export default function ChatPage() {
                                   <IconChat className="h-4 w-4" />
                                   <span className="truncate">{chat.title || "Sans titre"}</span>
                                 </button>
-                                <div className="relative">
-                                  <button
-                                    className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setActionMenuChatId((prev) =>
+                              <div className="relative z-50" data-chat-actions>
+                                <button
+                                  className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActionMenuChatId((prev) =>
                                         prev === chat.id ? null : chat.id
                                       )
                                     }}
                                     aria-label="Actions du chat"
+                                  data-chat-actions
                                   >
                                     <IconMore className="h-4 w-4" />
                                   </button>
-                                  {actionMenuChatId === chat.id && (
-                                    <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
+                                {actionMenuChatId === chat.id && (
+                                  <div
+                                    className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg"
+                                    data-chat-actions
+                                  >
                                       <button
                                         className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
                                         onClick={(e) => {
@@ -1478,13 +1493,6 @@ export default function ChatPage() {
       <SidebarInset>
         <SiteHeader title={headerTitle} />
         <div className="bg-background text-foreground flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
-          {actionMenuChatId && (
-            <div
-              className="fixed inset-0 z-30"
-              onClick={() => setActionMenuChatId(null)}
-              aria-hidden="true"
-            />
-          )}
           <div className="flex flex-1 flex-col items-center justify-center rounded-3xl  bg-white/90 p-8">
             <div className="mb-6 flex items-center justify-center">
               <Image

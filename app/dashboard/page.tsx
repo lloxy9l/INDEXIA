@@ -118,6 +118,18 @@ type DashboardUser = {
   admin: boolean
 }
 
+type DashboardDocument = {
+  id: string
+  name: string
+  type: string
+  category: string
+  size: string
+  uploadedAt: string
+  uploader: string
+  confidentiality: string
+  status: string
+}
+
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -171,7 +183,7 @@ const defaultUsers: DashboardUser[] = [
   },
 ]
 
-const documents = [
+const documents: DashboardDocument[] = [
   {
     id: "DOC-001",
     name: "Procedure_incident.pdf",
@@ -511,6 +523,16 @@ const chartColors = {
   },
 }
 
+function formatFileSize(bytes: number | string) {
+  if (typeof bytes === "string") return bytes
+  if (!Number.isFinite(bytes)) return "N/A"
+  const KB = 1024
+  const MB = KB * 1024
+  if (bytes >= MB) return `${(bytes / MB).toFixed(2)} MB`
+  if (bytes >= KB) return `${(bytes / KB).toFixed(1)} KB`
+  return `${bytes} B`
+}
+
 function formatDashboardDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -522,6 +544,64 @@ function formatDashboardDate(value: string) {
   const minutes = String(date.getMinutes()).padStart(2, "0")
 
   return `${day}/${month}/${year} - ${hours}h${minutes}`
+}
+
+function toDashboardDocument(
+  doc: any,
+  fallbackCategory: string,
+  fallbackConfidentiality: string
+): DashboardDocument {
+  const size =
+    typeof doc?.size === "number"
+      ? formatFileSize(doc.size)
+      : typeof doc?.size === "string"
+        ? doc.size
+        : "N/A"
+  const uploadedAt =
+    typeof doc?.uploadedAt === "string" && doc.uploadedAt
+      ? doc.uploadedAt
+      : new Date().toISOString()
+
+  return {
+    id:
+      typeof doc?.id === "string" && doc.id
+        ? doc.id
+        : `DOC-${Math.random().toString(16).slice(2)}`,
+    name:
+      typeof doc?.name === "string" && doc.name ? doc.name : "Sans nom",
+    type: typeof doc?.type === "string" && doc.type ? doc.type : "FILE",
+    category:
+      typeof doc?.category === "string" && doc.category
+        ? doc.category
+        : fallbackCategory || "Non classé",
+    size,
+    uploadedAt,
+    uploader:
+      typeof doc?.uploader === "string" && doc.uploader
+        ? doc.uploader
+        : "Upload",
+    confidentiality:
+      typeof doc?.confidentiality === "string" && doc.confidentiality
+        ? doc.confidentiality
+        : fallbackConfidentiality || "Public interne",
+    status:
+      typeof doc?.status === "string" && doc.status
+        ? doc.status
+        : "Stocké",
+  }
+}
+
+function mergeDocumentsLists(
+  base: DashboardDocument[],
+  incoming: DashboardDocument[]
+) {
+  const seen = new Set<string>()
+  return [...base, ...incoming].filter((doc) => {
+    const key = doc.id || `${doc.name}-${doc.uploadedAt}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 export default function Page() {
@@ -541,6 +621,19 @@ export default function Page() {
     user: DashboardUser
     nextIsAdmin: boolean
   } | null>(null)
+  const [documentsState, setDocumentsState] = React.useState<DashboardDocument[]>(documents)
+  const documentsFs = React.useMemo(
+    () => documentsState.filter((doc) => doc.id.startsWith("DOC-FS-")),
+    [documentsState]
+  )
+  const [uploadFiles, setUploadFiles] = React.useState<File[]>([])
+  const [uploadCategory, setUploadCategory] = React.useState("")
+  const [uploadTags, setUploadTags] = React.useState("")
+  const [uploadConfidentiality, setUploadConfidentiality] = React.useState("Public interne")
+  const [uploadingDocs, setUploadingDocs] = React.useState(false)
+  const [uploadMessage, setUploadMessage] = React.useState("")
+  const [uploadError, setUploadError] = React.useState("")
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [docsTab, setDocsTab] = React.useState("list")
   const [selectedDocId, setSelectedDocId] = React.useState(
     documents[0]?.id ?? ""
@@ -559,7 +652,7 @@ export default function Page() {
         }
         const payload = await res.json()
         const incoming = Array.isArray(payload?.users) ? payload.users : []
-        const normalized: DashboardUser[] = incoming.map((user) => ({
+        const normalized: DashboardUser[] = incoming.map((user: any) => ({
           id: user.id || user.email,
           firstName: user.firstName || "",
           lastName: user.lastName || "",
@@ -588,11 +681,40 @@ export default function Page() {
     }
   }, [])
 
+  const fetchDocumentsFromApi = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/documents")
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || `Erreur ${res.status}`)
+      }
+      const incoming = Array.isArray(payload?.documents) ? payload.documents : []
+      const mapped = incoming.map((doc: any) =>
+        toDashboardDocument(doc, "", "Public interne")
+      )
+      setDocumentsState((prev) => mergeDocumentsLists(prev, mapped))
+    } catch (error) {
+      console.error("Erreur lors du chargement des documents", error)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    fetchDocumentsFromApi()
+  }, [fetchDocumentsFromApi])
+
   const thirtyDaysAgo = React.useMemo(() => {
     const now = Date.now()
     const days30 = 30 * 24 * 60 * 60 * 1000
     return now - days30
   }, [])
+
+  React.useEffect(() => {
+    if (!documentsFs.length) return
+    const exists = documentsFs.some((doc) => doc.id === selectedDocId)
+    if (!exists) {
+      setSelectedDocId(documentsFs[0].id)
+    }
+  }, [documentsFs, selectedDocId])
 
   const activeUsers = usersState.filter((u) => u.active).length
   const totalUsers = usersState.length
@@ -601,10 +723,10 @@ export default function Page() {
     const created = new Date(u.createdAt).getTime()
     return !Number.isNaN(created) && created >= thirtyDaysAgo
   }).length
-  const selectedDoc = documents.find((doc) => doc.id === selectedDocId)
-  const indexedDocs = documents.filter((d) => d.status === "Indexé").length
-  const inProgressDocs = documents.filter((d) => d.status === "En cours").length
-  const errorDocs = documents.filter((d) => d.status === "Erreur").length
+  const selectedDoc = documentsState.find((doc) => doc.id === selectedDocId)
+  const indexedDocs = documentsFs.filter((d) => d.status === "Indexé").length
+  const inProgressDocs = documentsFs.filter((d) => d.status === "En cours").length
+  const errorDocs = documentsFs.filter((d) => d.status === "Erreur").length
 
   const applyAdminToggle = React.useCallback((id: string, nextIsAdmin: boolean) => {
     setUsersState((prev) =>
@@ -679,6 +801,65 @@ export default function Page() {
       setDeletingUserId("")
     }
   }, [confirmDeleteUser])
+
+  const handleDocumentsUpload = React.useCallback(async () => {
+    if (uploadFiles.length === 0) {
+      setUploadError("Ajoutez au moins un fichier")
+      return
+    }
+    setUploadingDocs(true)
+    setUploadError("")
+    setUploadMessage("")
+
+    const formData = new FormData()
+    uploadFiles.slice(0, 10).forEach((file) => formData.append("files", file))
+    if (uploadCategory) formData.append("category", uploadCategory)
+    if (uploadTags) formData.append("tags", uploadTags)
+    if (uploadConfidentiality) {
+      formData.append("confidentiality", uploadConfidentiality)
+    }
+
+    try {
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        body: formData,
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || "Upload échoué")
+      }
+      const incoming = Array.isArray(payload?.documents) ? payload.documents : []
+      const mapped = incoming.map((doc: any) =>
+        toDashboardDocument(doc, uploadCategory, uploadConfidentiality)
+      )
+
+      setDocumentsState((prev) => mergeDocumentsLists(prev, mapped))
+      setUploadMessage(
+        mapped.length > 0
+          ? `Upload réussi (${mapped.length} fichier${mapped.length > 1 ? "s" : ""})`
+          : "Upload réussi"
+      )
+      setUploadFiles([])
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      if (mapped[0]) {
+        setSelectedDocId(mapped[0].id)
+      }
+      setDocsTab("list")
+    } catch (error) {
+      console.error("Erreur lors de l'upload des documents", error)
+      setUploadError(error instanceof Error ? error.message : "Upload échoué")
+    } finally {
+      setUploadingDocs(false)
+    }
+  }, [
+    uploadFiles,
+    uploadCategory,
+    uploadTags,
+    uploadConfidentiality,
+    selectedDocId,
+  ])
 
   const indexView = (
     <div className="space-y-5">
@@ -1445,7 +1626,7 @@ export default function Page() {
                             <CardHeader>
                               <CardDescription>Total documents</CardDescription>
                               <CardTitle className="text-2xl font-semibold tabular-nums">
-                                {documents.length}
+                                {documentsFs.length}
                               </CardTitle>
                             </CardHeader>
                           </Card>
@@ -1494,10 +1675,10 @@ export default function Page() {
                                   <TableHead>Confidentialité</TableHead>
                                   <TableHead>Statut</TableHead>
                                   <TableHead>Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {documents.map((doc) => (
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {documentsFs.map((doc) => (
                                   <TableRow key={doc.id}>
                                     <TableCell className="font-medium">
                                       {doc.name}
@@ -1505,7 +1686,9 @@ export default function Page() {
                                     <TableCell>{doc.type}</TableCell>
                                     <TableCell>{doc.category}</TableCell>
                                     <TableCell>{doc.size}</TableCell>
-                                    <TableCell>{doc.uploadedAt}</TableCell>
+                                    <TableCell>
+                                      {formatDashboardDate(doc.uploadedAt)}
+                                    </TableCell>
                                     <TableCell>{doc.uploader}</TableCell>
                                     <TableCell>{doc.confidentiality}</TableCell>
                                     <TableCell>
@@ -1565,7 +1748,11 @@ export default function Page() {
                               <div className="font-medium">Auteur</div>
                               <div>{selectedDoc?.uploader}</div>
                               <div className="font-medium">Date / heure</div>
-                              <div>{selectedDoc?.uploadedAt}</div>
+                              <div>
+                                {selectedDoc
+                                  ? formatDashboardDate(selectedDoc.uploadedAt)
+                                  : ""}
+                              </div>
                               <div className="font-medium">Poids</div>
                               <div>{selectedDoc?.size}</div>
                               <div className="font-medium">Type</div>
@@ -1657,32 +1844,80 @@ export default function Page() {
                               <label className="text-sm font-medium">
                                 Fichiers (jusqu’à 10)
                               </label>
-                              <Input type="file" multiple />
+                              <Input
+                                ref={fileInputRef}
+                                type="file"
+                                multiple
+                                onChange={(event) => {
+                                  const files = Array.from(event.target.files ?? []).slice(0, 10)
+                                  setUploadFiles(files)
+                                  setUploadError("")
+                                  setUploadMessage("")
+                                }}
+                              />
                               <div className="text-xs text-muted-foreground">
-                                Formats : PDF, DOCX, TXT, Markdown · Limite 10 fichiers par lot
+                                Formats : PDF, DOCX, TXT, Markdown · Limite 10 fichiers par lot (stockés dans data/doc)
                               </div>
+                              {uploadFiles.length > 0 && (
+                                <ul className="text-xs text-muted-foreground space-y-1">
+                                  {uploadFiles.map((file) => (
+                                    <li key={file.name} className="flex items-center justify-between gap-2">
+                                      <span className="truncate">{file.name}</span>
+                                      <span className="whitespace-nowrap">
+                                        {formatFileSize(file.size)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
                             <div className="grid gap-2">
                               <label className="text-sm font-medium">Service / catégorie</label>
-                              <Input placeholder="IT, RH, Finance, R&D..." />
+                              <Input
+                                placeholder="IT, RH, Finance, R&D..."
+                                value={uploadCategory}
+                                onChange={(event) => setUploadCategory(event.target.value)}
+                              />
                             </div>
                             <div className="grid gap-2">
                               <label className="text-sm font-medium">Tags</label>
-                              <Input placeholder="incident, sécurité, process..." />
+                              <Input
+                                placeholder="incident, sécurité, process..."
+                                value={uploadTags}
+                                onChange={(event) => setUploadTags(event.target.value)}
+                              />
                             </div>
                             <div className="grid gap-2">
                               <label className="text-sm font-medium">Confidentialité</label>
                               <div className="flex gap-3 text-sm">
                                 <label className="flex items-center gap-2">
-                                  <input type="radio" name="confidentiality" defaultChecked />
+                                  <input
+                                    type="radio"
+                                    name="confidentiality"
+                                    value="Public interne"
+                                    checked={uploadConfidentiality === "Public interne"}
+                                    onChange={(event) => setUploadConfidentiality(event.target.value)}
+                                  />
                                   Public interne
                                 </label>
                                 <label className="flex items-center gap-2">
-                                  <input type="radio" name="confidentiality" />
+                                  <input
+                                    type="radio"
+                                    name="confidentiality"
+                                    value="Restreint"
+                                    checked={uploadConfidentiality === "Restreint"}
+                                    onChange={(event) => setUploadConfidentiality(event.target.value)}
+                                  />
                                   Restreint
                                 </label>
                                 <label className="flex items-center gap-2">
-                                  <input type="radio" name="confidentiality" />
+                                  <input
+                                    type="radio"
+                                    name="confidentiality"
+                                    value="Très sensible"
+                                    checked={uploadConfidentiality === "Très sensible"}
+                                    onChange={(event) => setUploadConfidentiality(event.target.value)}
+                                  />
                                   Très sensible
                                 </label>
                               </div>
@@ -1691,10 +1926,18 @@ export default function Page() {
                               <div>Extraction texte · Chunking · Embeddings · Indexation FAISS/Chroma</div>
                               <div>Attribution permissions</div>
                             </div>
-                            <Button>Indexer le document</Button>
-                            <div className="text-sm text-emerald-600">
-                              Document indexé avec succès (152 chunks générés)
-                            </div>
+                            {uploadError && (
+                              <div className="text-sm text-destructive">{uploadError}</div>
+                            )}
+                            {uploadMessage && !uploadError && (
+                              <div className="text-sm text-emerald-600">{uploadMessage}</div>
+                            )}
+                            <Button
+                              onClick={handleDocumentsUpload}
+                              disabled={uploadingDocs || uploadFiles.length === 0}
+                            >
+                              {uploadingDocs ? "Upload en cours..." : "Indexer les documents"}
+                            </Button>
                           </CardContent>
                         </Card>
                       </TabsContent>
