@@ -1,16 +1,11 @@
 [
   {
-    "id": "608f931e-6e4b-4062-ae6d-7c448e0e974a",
-    "email": "b@b.b",
-    "passwordHash": "fb398cc690e15ddba43ee811b6c0d3ec190901ad3df377fec9a1f9004b919a06",
-    "createdAt": "2025-11-26T09:32:01.717Z",
-    "admin": false
-  },
-  {
-    "id": "c05ae507-7b21-40ec-9c8e-8ad78d02e2e3",
-    "email": "x@x.x",
-    "passwordHash": "4cf0c1012276f46af31e44d2fbb03ae7af56f03c9996eb9452b99b3e6273698e",
-    "createdAt": "2025-11-26T09:59:55.944Z",
-    "admin": false
+    "id": "09131b39-b792-40b7-a37a-64193daf51de",
+    "email": "renand.baptiste@icloud.com",
+    "passwordHash": "c413759ad6b202a234c2cfb284a23ba3f8b2d28e82b4277648eee3e6a9866399",
+    "createdAt": "2025-11-26T12:45:07.829Z",
+    "admin": true,
+    "firstName": "Baptiste",
+    "lastName": "Renand"
   }
 ]

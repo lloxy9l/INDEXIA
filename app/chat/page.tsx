@@ -5,8 +5,29 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
+import type { ChatRecord } from "@/lib/chats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+
+type SpeechRecognitionResultEvent = {
+  resultIndex: number
+  results: Array<{
+    isFinal: boolean
+    0: { transcript: string }
+  }>
+}
+
+type SpeechRecognitionInstance = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onstart: (() => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null
+  start: () => void
+  stop: () => void
+}
 
 export default function ChatPage() {
   const router = useRouter()
@@ -27,15 +48,89 @@ export default function ChatPage() {
     { name: string; size: number }[]
   >([])
   const [fileNotice, setFileNotice] = useState("")
-  const [selectedChatId, setSelectedChatId] = useState("chat-1")
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
+  const [chats, setChats] = useState<ChatRecord[]>([])
+  const [loadingChats, setLoadingChats] = useState(false)
+  const [chatError, setChatError] = useState("")
+  const [isCreatingChat, setIsCreatingChat] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   const [showSettings, setShowSettings] = useState(false)
+  const [session, setSession] = useState<{
+    email: string
+    admin: boolean
+    firstName?: string | null
+    lastName?: string | null
+  } | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const [emailEditMode, setEmailEditMode] = useState(false)
+  const [emailInput, setEmailInput] = useState("")
+  const [emailUpdating, setEmailUpdating] = useState(false)
+  const [emailUpdateError, setEmailUpdateError] = useState("")
+  const [emailUpdateSuccess, setEmailUpdateSuccess] = useState("")
+  const [nameEditMode, setNameEditMode] = useState(false)
+  const [firstNameInput, setFirstNameInput] = useState("")
+  const [lastNameInput, setLastNameInput] = useState("")
+  const [nameUpdating, setNameUpdating] = useState(false)
+  const [nameUpdateError, setNameUpdateError] = useState("")
+  const [nameUpdateSuccess, setNameUpdateSuccess] = useState("")
+  const [passwordEditMode, setPasswordEditMode] = useState(false)
+  const [passwordInput, setPasswordInput] = useState("")
+  const [passwordConfirm, setPasswordConfirm] = useState("")
+  const [passwordUpdating, setPasswordUpdating] = useState(false)
+  const [passwordUpdateError, setPasswordUpdateError] = useState("")
+  const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState("")
+  const [exportingData, setExportingData] = useState(false)
+  const [exportError, setExportError] = useState("")
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleNewChat = () => {
-    console.log("Créer un nouveau chat")
+  const handleNewChat = async () => {
+    if (isCreatingChat) return
+    setIsCreatingChat(true)
+    setChatError("")
+
+    const fallbackTitle = `Nouveau chat ${chats.length + 1}`
+
+    try {
+      const res = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: fallbackTitle }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de créer le chat")
+      }
+
+      const created = payload?.chat as ChatRecord | undefined
+
+      if (created) {
+        setChats((prev) => {
+          const next = [created, ...prev.filter((chat) => chat.id !== created.id)]
+          return next.sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+        })
+        setSelectedChatId(created.id)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du chat", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de créer un nouveau chat"
+      setChatError(message)
+    } finally {
+      setIsCreatingChat(false)
+    }
   }
 
   const handleNewProject = () => {
@@ -61,13 +156,16 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SpeechRecognition) {
+    const SpeechRecognitionCtor =
+      ((window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition) as
+        | (new () => SpeechRecognitionInstance)
+        | undefined
+    if (!SpeechRecognitionCtor) {
       recognitionRef.current = null
       return
     }
-    const recognition: SpeechRecognition = new SpeechRecognition()
+    const recognition: SpeechRecognitionInstance = new SpeechRecognitionCtor()
     recognition.lang = "fr-FR"
     recognition.continuous = true
     recognition.interimResults = false
@@ -75,7 +173,7 @@ export default function ChatPage() {
     recognition.onstart = () => setIsListening(true)
     recognition.onend = () => setIsListening(false)
     recognition.onerror = () => setIsListening(false)
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
       const result = event.results[event.resultIndex]
       if (!result?.isFinal) return
       const transcript = result[0].transcript.trim()
@@ -142,6 +240,240 @@ export default function ChatPage() {
     }
   }
 
+  const openEmailEdit = () => {
+    setEmailUpdateError("")
+    setEmailUpdateSuccess("")
+    setEmailEditMode(true)
+    setEmailInput(session?.email ?? "")
+  }
+
+  const openPasswordEdit = () => {
+    setPasswordEditMode(true)
+    setPasswordUpdateError("")
+    setPasswordUpdateSuccess("")
+    setPasswordInput("")
+    setPasswordConfirm("")
+  }
+
+  const openDeleteConfirm = () => {
+    setDeleteConfirmOpen(true)
+    setDeleteError("")
+  }
+
+  const openNameEdit = () => {
+    setNameEditMode(true)
+    setNameUpdateError("")
+    setNameUpdateSuccess("")
+    setFirstNameInput(session?.firstName ?? "")
+    setLastNameInput(session?.lastName ?? "")
+  }
+
+  const handleExportData = async () => {
+    setExportError("")
+    setExportingData(true)
+    try {
+      const res = await fetch("/api/account/export")
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        throw new Error(payload?.error ?? "Impossible d'exporter les données")
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "indexia-export.csv"
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Impossible d'exporter les données"
+      setExportError(message)
+    } finally {
+      setExportingData(false)
+    }
+  }
+
+  const handleEmailUpdate = async () => {
+    const normalized = emailInput.trim().toLowerCase()
+    if (!normalized || !normalized.includes("@") || normalized.length < 5) {
+      setEmailUpdateError("Email invalide")
+      return
+    }
+
+    setEmailUpdateError("")
+    setEmailUpdateSuccess("")
+    setEmailUpdating(true)
+
+    try {
+      const res = await fetch("/api/account/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de mettre à jour l'email")
+      }
+
+      const updatedEmail =
+        typeof payload?.email === "string" && payload.email ? payload.email : normalized
+
+      setSession((prev) => (prev ? { ...prev, email: updatedEmail } : prev))
+      setEmailInput(updatedEmail)
+      setEmailUpdateSuccess("Email mis à jour")
+      setEmailEditMode(false)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Impossible de mettre à jour l'email"
+      setEmailUpdateError(message)
+    } finally {
+      setEmailUpdating(false)
+    }
+  }
+
+  const handleNameUpdate = async () => {
+    const firstName = firstNameInput.trim()
+    const lastName = lastNameInput.trim()
+
+    if (!firstName || !lastName) {
+      setNameUpdateError("Prénom et nom sont requis")
+      return
+    }
+
+    setNameUpdateError("")
+    setNameUpdateSuccess("")
+    setNameUpdating(true)
+
+    try {
+      const res = await fetch("/api/account/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de mettre à jour le profil")
+      }
+
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              firstName: payload?.firstName ?? firstName,
+              lastName: payload?.lastName ?? lastName,
+            }
+          : prev
+      )
+      setNameUpdateSuccess("Profil mis à jour")
+      setNameEditMode(false)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Impossible de mettre à jour le profil"
+      setNameUpdateError(message)
+    } finally {
+      setNameUpdating(false)
+    }
+  }
+
+  const handlePasswordUpdate = async () => {
+    if (!passwordInput || !passwordConfirm) {
+      setPasswordUpdateError("Mot de passe requis")
+      return
+    }
+    if (passwordInput !== passwordConfirm) {
+      setPasswordUpdateError("Les mots de passe ne correspondent pas")
+      return
+    }
+    if (passwordInput.length < 8) {
+      setPasswordUpdateError("Le mot de passe doit contenir au moins 8 caractères")
+      return
+    }
+
+    setPasswordUpdateError("")
+    setPasswordUpdateSuccess("")
+    setPasswordUpdating(true)
+
+    try {
+      const res = await fetch("/api/account/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordInput, confirm: passwordConfirm }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de mettre à jour le mot de passe")
+      }
+
+      setPasswordUpdateSuccess("Mot de passe mis à jour")
+      setPasswordEditMode(false)
+      setPasswordInput("")
+      setPasswordConfirm("")
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Impossible de mettre à jour le mot de passe"
+      setPasswordUpdateError(message)
+    } finally {
+      setPasswordUpdating(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteError("")
+    setDeletingAccount(true)
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de supprimer le compte")
+      }
+
+      router.replace("/login")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Impossible de supprimer le compte"
+      setDeleteError(message)
+    } finally {
+      setDeletingAccount(false)
+    }
+  }
+
   useEffect(() => {
     let active = true
     const checkSession = async () => {
@@ -152,6 +484,18 @@ export default function ChatPage() {
           router.replace("/login")
           return
         }
+        const payload = await res.json().catch(() => null)
+        if (!active) return
+        if (!payload?.email) {
+          router.replace("/login")
+          return
+        }
+        setSession({
+          email: payload.email,
+          admin: payload.admin ?? false,
+          firstName: payload.firstName ?? null,
+          lastName: payload.lastName ?? null,
+        })
         setCheckingAuth(false)
       } catch (error) {
         console.error("Erreur lors du contrôle de session", error)
@@ -164,6 +508,62 @@ export default function ChatPage() {
       active = false
     }
   }, [router])
+
+  useEffect(() => {
+    if (session?.email) {
+      setEmailInput(session.email)
+    }
+    if (session?.firstName || session?.lastName) {
+      setFirstNameInput(session.firstName ?? "")
+      setLastNameInput(session.lastName ?? "")
+    }
+  }, [session])
+
+  useEffect(() => {
+    if (!session) return
+    let active = true
+
+    const fetchChats = async () => {
+      setLoadingChats(true)
+      setChatError("")
+      try {
+        const res = await fetch("/api/chats")
+        const payload = await res.json().catch(() => ({}))
+        if (!active) return
+        if (res.status === 401) {
+          router.replace("/login")
+          return
+        }
+        if (!res.ok) {
+          setChatError(payload?.error ?? "Impossible de charger vos chats")
+          return
+        }
+        const nextChats = Array.isArray(payload?.chats) ? payload.chats : []
+        nextChats.sort(
+          (a: ChatRecord, b: ChatRecord) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+        setChats(nextChats)
+        if (!selectedChatId && nextChats.length > 0) {
+          setSelectedChatId(nextChats[0].id)
+        }
+      } catch (error) {
+        if (!active) return
+        console.error("Erreur lors du chargement des chats", error)
+        setChatError("Impossible de charger vos chats")
+      } finally {
+        if (active) {
+          setLoadingChats(false)
+        }
+      }
+    }
+
+    fetchChats()
+
+    return () => {
+      active = false
+    }
+  }, [router, session])
 
   const getFileIcon = (filename: string) => {
     const ext = filename.split(".").pop()?.toLowerCase()
@@ -182,6 +582,30 @@ export default function ChatPage() {
     if (isVideo) return <IconVideo className="h-4 w-4" />
     return <IconFile className="h-4 w-4" />
   }
+
+  const normalizeText = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim()
+
+  const searchQuery = normalizeText(searchTerm)
+
+  const filteredChats = chats.filter((chat) => {
+    const title = normalizeText(chat.title || "")
+    return searchQuery === "" ? true : title.includes(searchQuery)
+  })
+  const userInitials =
+    (session?.firstName?.[0] || "") + (session?.lastName?.[0] || "")
+      ? `${(session?.firstName?.[0] || "").toUpperCase()}${(session?.lastName?.[0] || "").toUpperCase()}`
+      : session?.email
+        ? session.email.slice(0, 2).toUpperCase()
+        : "??"
+  const userLabel =
+    session?.firstName || session?.lastName
+      ? `${session?.firstName ?? ""} ${session?.lastName ?? ""}`.trim()
+      : "Utilisateur"
 
   if (checkingAuth) {
     return (
@@ -211,15 +635,19 @@ export default function ChatPage() {
             type="text"
             placeholder="Rechercher des chats"
             className="w-full rounded-xl border border-border bg-background px-10 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <button
-          className="text-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer  "
+          type="button"
+          className="text-foreground hover:bg-[#ededed] disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
           onClick={handleNewChat}
+          disabled={isCreatingChat || !session}
         >
           <IconChat className="h-4 w-4" />
-          Nouveau chat
+          {isCreatingChat ? "Création..." : "Nouveau chat"}
         </button>
         <button
           className="text-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
@@ -234,8 +662,11 @@ export default function ChatPage() {
           Vos derniers chats
         </div>
         <div className="flex flex-col gap-2">
-          {[{ id: "chat-1", label: "Essai 1" }, { id: "chat-2", label: "Essai 2" }].map(
-            (chat) => {
+          {loadingChats && (
+            <span className="text-xs text-muted-foreground">Chargement des chats...</span>
+          )}
+          {!loadingChats &&
+            filteredChats.map((chat) => {
               const isActive = chat.id === selectedChatId
               return (
                 <button
@@ -248,10 +679,21 @@ export default function ChatPage() {
                   }`}
                 >
                   <IconChat className="h-4 w-4" />
-                  {chat.label}
+                  {chat.title || "Sans titre"}
                 </button>
               )
-            }
+            })}
+          {!loadingChats && filteredChats.length === 0 && (
+            <span className="text-xs text-muted-foreground">
+              {chatError
+                ? chatError
+                : searchTerm
+                  ? "Aucun chat ne correspond à la recherche"
+                  : "Aucun chat pour le moment"}
+            </span>
+          )}
+          {chatError && !loadingChats && filteredChats.length > 0 && (
+            <span className="text-xs text-red-500">{chatError}</span>
           )}
         </div>
 
@@ -272,11 +714,13 @@ export default function ChatPage() {
           </button>
           <div className="flex items-center gap-3 rounded-xl px-3 py-2 mt-4 mb-2">
             <div className="bg-foreground/10 text-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
-              MS
+              {userInitials}
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold">Maxens Soldan</div>
-              <div className="text-xs text-muted-foreground">En ligne</div>
+              <div className="text-sm font-semibold">{userLabel}</div>
+              <div className="text-xs text-muted-foreground">
+                {session ? "Connecté" : "En attente..."}
+              </div>
             </div>
           </div>
         </div>
@@ -508,13 +952,261 @@ export default function ChatPage() {
             <div className="grid gap-4 px-6 py-6 md:grid-cols-2">
               <div className="flex flex-col gap-4">
                 <SettingsSection title="Profil">
-                  <SettingsRow label="Nom complet" value="Maxens Soldan" action="Modifier" />
-                  <SettingsRow label="Email" value="maxens@example.com" action="Changer" />
-                  <SettingsRow label="Mot de passe" value="••••••••" action="Mettre à jour" />
+                  <SettingsRow
+                    label="Nom complet"
+                    value={
+                      session?.firstName || session?.lastName
+                        ? `${session?.firstName ?? ""} ${session?.lastName ?? ""}`.trim()
+                        : "Non renseigné"
+                    }
+                    action="Modifier"
+                    onAction={openNameEdit}
+                    disabled={!session}
+                  />
+                  {nameEditMode && (
+                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          htmlFor="first-name-update"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Prénom
+                        </label>
+                        <input
+                          id="first-name-update"
+                          type="text"
+                          value={firstNameInput}
+                          onChange={(e) => setFirstNameInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          placeholder="Prénom"
+                          disabled={nameUpdating}
+                        />
+                        <label
+                          htmlFor="last-name-update"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Nom
+                        </label>
+                        <input
+                          id="last-name-update"
+                          type="text"
+                          value={lastNameInput}
+                          onChange={(e) => setLastNameInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          placeholder="Nom"
+                          disabled={nameUpdating}
+                        />
+                        {nameUpdateError ? (
+                          <p className="text-xs text-red-500">{nameUpdateError}</p>
+                        ) : null}
+                        {nameUpdateSuccess ? (
+                          <p className="text-xs text-emerald-600">{nameUpdateSuccess}</p>
+                        ) : null}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={() => {
+                              setNameEditMode(false)
+                              setNameUpdateError("")
+                              setNameUpdateSuccess("")
+                              setFirstNameInput(session?.firstName ?? "")
+                              setLastNameInput(session?.lastName ?? "")
+                            }}
+                            disabled={nameUpdating}
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={handleNameUpdate}
+                            disabled={nameUpdating}
+                          >
+                            {nameUpdating ? "Mise à jour..." : "Enregistrer"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <SettingsRow
+                    label="Email"
+                    value={session?.email ?? "Non disponible"}
+                    action="Changer"
+                    onAction={openEmailEdit}
+                    disabled={!session}
+                  />
+                  {emailEditMode && (
+                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          htmlFor="email-update"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Nouveau email
+                        </label>
+                        <input
+                          id="email-update"
+                          type="email"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          placeholder="nouveau@email.com"
+                          disabled={emailUpdating}
+                        />
+                        {emailUpdateError ? (
+                          <p className="text-xs text-red-500">{emailUpdateError}</p>
+                        ) : null}
+                        {emailUpdateSuccess ? (
+                          <p className="text-xs text-emerald-600">{emailUpdateSuccess}</p>
+                        ) : null}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={() => {
+                              setEmailEditMode(false)
+                              setEmailUpdateError("")
+                              setEmailUpdateSuccess("")
+                              setEmailInput(session?.email ?? "")
+                            }}
+                            disabled={emailUpdating}
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={handleEmailUpdate}
+                            disabled={emailUpdating}
+                          >
+                            {emailUpdating ? "Mise à jour..." : "Enregistrer"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <SettingsRow
+                    label="Mot de passe"
+                    value="••••••••"
+                    action="Mettre à jour"
+                    onAction={openPasswordEdit}
+                    disabled={!session}
+                  />
+                  {passwordEditMode && (
+                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          htmlFor="password-update"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Nouveau mot de passe
+                        </label>
+                        <input
+                          id="password-update"
+                          type="password"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          placeholder="••••••••"
+                          disabled={passwordUpdating}
+                        />
+                        <label
+                          htmlFor="password-confirm"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          Confirmer le mot de passe
+                        </label>
+                        <input
+                          id="password-confirm"
+                          type="password"
+                          value={passwordConfirm}
+                          onChange={(e) => setPasswordConfirm(e.target.value)}
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                          placeholder="••••••••"
+                          disabled={passwordUpdating}
+                        />
+                        {passwordUpdateError ? (
+                          <p className="text-xs text-red-500">{passwordUpdateError}</p>
+                        ) : null}
+                        {passwordUpdateSuccess ? (
+                          <p className="text-xs text-emerald-600">{passwordUpdateSuccess}</p>
+                        ) : null}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={() => {
+                              setPasswordEditMode(false)
+                              setPasswordUpdateError("")
+                              setPasswordUpdateSuccess("")
+                              setPasswordInput("")
+                              setPasswordConfirm("")
+                            }}
+                            disabled={passwordUpdating}
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                            onClick={handlePasswordUpdate}
+                            disabled={passwordUpdating}
+                          >
+                            {passwordUpdating ? "Mise à jour..." : "Enregistrer"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </SettingsSection>
                 <SettingsSection title="Données & confidentialité">
-                  <SettingsRow label="Export données" value="Disponible" action="Exporter" />
-                  <SettingsRow label="Suppression compte" action="Supprimer" danger />
+                  <SettingsRow
+                    label="Export données"
+                    value={exportError ? exportError : "Disponible"}
+                    action={exportingData ? "Export..." : "Exporter"}
+                    onAction={handleExportData}
+                    disabled={!session || exportingData}
+                    danger={!!exportError}
+                  />
+                  <SettingsRow
+                    label="Suppression compte"
+                    action="Supprimer"
+                    danger
+                    onAction={openDeleteConfirm}
+                    disabled={!session}
+                  />
+                  {deleteConfirmOpen && (
+                    <div className="rounded-xl bg-red-50 px-3 py-3 shadow-sm border border-red-200">
+                      <p className="text-sm font-semibold text-red-700">
+                        Confirmer la suppression du compte ?
+                      </p>
+                      <p className="text-xs text-red-600">
+                        Cette action supprimera votre compte et vos chats.
+                      </p>
+                      {deleteError ? (
+                        <p className="text-xs text-red-600 mt-1">{deleteError}</p>
+                      ) : null}
+                      <div className="mt-3 flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                          onClick={() => {
+                            setDeleteConfirmOpen(false)
+                            setDeleteError("")
+                          }}
+                          disabled={deletingAccount}
+                        >
+                          Annuler
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="h-8 rounded-full px-3 text-xs cursor-pointer"
+                          onClick={handleDeleteAccount}
+                          disabled={deletingAccount}
+                        >
+                          {deletingAccount ? "Suppression..." : "Oui, supprimer"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </SettingsSection>
               </div>
               <div className="flex flex-col gap-4">
@@ -522,7 +1214,10 @@ export default function ChatPage() {
                   <SettingsRow label="2FA" value="Désactivé" action="Activer" />
                   <SettingsRow label="Clés API" value="2 clés actives" action="Gérer" />
                   <SettingsRow label="Sessions" value="4 sessions ouvertes" action="Révoquer" />
-                  <SettingsRow label="Rôle" value="Admin" />
+                  <SettingsRow
+                    label="Rôle"
+                    value={session ? (session.admin ? "Administrateur" : "Utilisateur") : "Inconnu"}
+                  />
                 </SettingsSection>
               </div>
             </div>
@@ -997,6 +1692,8 @@ type SettingsRowProps = {
   value?: string
   action?: string
   danger?: boolean
+  onAction?: () => void
+  disabled?: boolean
 }
 
 function SettingsSection({
@@ -1014,17 +1711,27 @@ function SettingsSection({
   )
 }
 
-function SettingsRow({ label, value, action, danger }: SettingsRowProps) {
+function SettingsRow({ label, value, action, danger, onAction, disabled }: SettingsRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
       <div>
         <div className="text-sm font-medium">{label}</div>
-        {value ? <div className="text-xs text-muted-foreground">{value}</div> : null}
+        {value ? (
+          <div
+            className={`text-xs ${
+              danger ? "text-red-600" : "text-muted-foreground"
+            }`}
+          >
+            {value}
+          </div>
+        ) : null}
       </div>
       {action ? (
         <Button
           variant={danger ? "destructive" : "outline"}
           className="h-8 rounded-full px-3 text-xs cursor-pointer"
+          onClick={onAction}
+          disabled={disabled}
         >
           {action}
         </Button>

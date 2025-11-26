@@ -17,7 +17,12 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    return NextResponse.json({ email, admin: user.admin ?? false })
+    return NextResponse.json({
+      email,
+      admin: user.admin ?? false,
+      firstName: user.firstName ?? null,
+      lastName: user.lastName ?? null,
+    })
   } catch (error) {
     console.error("Erreur validation session", error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })

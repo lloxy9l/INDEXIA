@@ -8,6 +8,8 @@ export type UserRecord = {
   passwordHash: string
   createdAt: string
   admin?: boolean
+  firstName?: string
+  lastName?: string
 }
 
 export const DB_PATH = path.join(process.cwd(), "data", "users.db")
@@ -68,11 +70,14 @@ export function validateAuthCookie(raw?: string) {
 }
 
 export function createNewUser(email: string, password: string): UserRecord {
+  const randomLastName = Math.floor(10000000 + Math.random() * 90000000).toString()
   return {
     id: randomUUID(),
     email,
     passwordHash: hashPassword(password),
     createdAt: new Date().toISOString(),
     admin: false,
+    firstName: "user",
+    lastName: randomLastName,
   }
 }
