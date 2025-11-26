@@ -19,7 +19,11 @@ export default function ChatPage() {
   ]
   const [selectedModel, setSelectedModel] = useState(models[0])
   const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState("")
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleTextareaInput = () => {
     const el = textareaRef.current
@@ -33,6 +37,61 @@ export default function ChatPage() {
   useEffect(() => {
     handleTextareaInput()
   }, [])
+
+  useEffect(() => {
+    handleTextareaInput()
+  }, [message])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      recognitionRef.current = null
+      return
+    }
+    const recognition: SpeechRecognition = new SpeechRecognition()
+    recognition.lang = "fr-FR"
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = ""
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setMessage((prev) => {
+        const base = prev.trim()
+        return base ? `${base} ${transcript}` : transcript
+      })
+    }
+
+    recognitionRef.current = recognition
+    return () => {
+      recognition.stop()
+      recognitionRef.current = null
+    }
+  }, [])
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleVoiceClick = () => {
+    const recognition = recognitionRef.current
+    if (!recognition) {
+      console.warn("SpeechRecognition non disponible dans ce navigateur.")
+      return
+    }
+    if (isListening) {
+      recognition.stop()
+    } else {
+      recognition.start()
+    }
+  }
 
   return (
     <div className="bg-background text-foreground flex min-h-svh">
@@ -81,11 +140,41 @@ export default function ChatPage() {
               rows={1}
               ref={textareaRef}
               onInput={handleTextareaInput}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Demandez, cherchez ou faites ce que vous voulez..."
               className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
             />
 
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={(e) => {
+                    // Placeholder: handle selected files here if needed.
+                    console.log("Files selected:", e.target.files)
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleFileClick}
+                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent transition cursor-pointer"
+                  aria-label="Joindre un fichier"
+                >
+                  <IconPaperclip className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent transition cursor-pointer"
+                  aria-label="Dicter un message"
+                  onClick={handleVoiceClick}
+                >
+                  <IconMic className={`h-5 w-5 ${isListening ? "text-primary" : ""}`} />
+                </button>
+              </div>
               <div className="relative flex items-center">
                 <button
                   type="button"
@@ -226,6 +315,26 @@ function IconArrowUp(props: React.SVGProps<SVGSVGElement>) {
     >
       <path d="M12 19V5" />
       <path d="m5 12 7-7 7 7" />
+    </svg>
+  )
+}
+
+function IconMic(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
+      <path d="M19 10v1a7 7 0 1 1-14 0v-1" />
+      <line x1="12" x2="12" y1="19" y2="22" />
     </svg>
   )
 }
