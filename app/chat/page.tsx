@@ -24,9 +24,18 @@ export default function ChatPage() {
   const [uploadedFiles, setUploadedFiles] = useState<
     { name: string; size: number }[]
   >([])
+  const [fileNotice, setFileNotice] = useState("")
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleNewChat = () => {
+    console.log("Créer un nouveau chat")
+  }
+
+  const handleNewProject = () => {
+    console.log("Créer un nouveau projet")
+  }
 
   const handleTextareaInput = () => {
     const el = textareaRef.current
@@ -89,7 +98,20 @@ export default function ChatPage() {
       name: f.name,
       size: f.size,
     }))
-    setUploadedFiles((prev) => [...prev, ...mapped].slice(0, 3))
+    setUploadedFiles((prev) => {
+      const next = [...prev, ...mapped]
+      if (next.length > 3) {
+        setFileNotice("Maximum 3 fichiers. Seuls les 3 premiers sont conservés.")
+      } else {
+        setFileNotice("")
+      }
+      return next.slice(0, 3)
+    })
+  }
+
+  const handleRemoveFile = (name: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.name !== name))
+    setFileNotice("")
   }
 
   const handleVoiceClick = () => {
@@ -125,30 +147,74 @@ export default function ChatPage() {
 
   return (
     <div className="bg-background text-foreground flex min-h-svh">
-      <aside className="border-border bg-muted/40 flex w-72 flex-col gap-4 border-r p-6">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <IconMenu className="h-4 w-4" />
-          Conversations
+      <aside className="border-border bg-muted/40 flex w-80 flex-col gap-4 border-r p-6">
+        <div className="flex items-center gap-3 mb-4">
+<Image
+          src={logoSrc}
+          alt="Logo"
+          width={140}
+          height={140}
+          priority
+          unoptimized
+        />        
         </div>
-        <button className="text-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
-          <span className="text-lg">+</span>
+
+        <div className="relative">
+          <IconSearch className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Rechercher des chats"
+            className="w-full rounded-xl border border-border bg-background px-10 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+          />
+        </div>
+
+        <button
+          className="text-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer  "
+          onClick={handleNewChat}
+        >
+          <IconChat className="h-4 w-4" />
           Nouveau chat
         </button>
+        <button
+          className="text-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+          onClick={handleNewProject}
+        >
+          <IconPlusSquare className="h-4 w-4" />
+          Nouveau projet
+        </button>
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-6">
+          <IconMenu className="h-3 w-3" />
+          Vos derniers chats
+        </div>
         <div className="flex flex-col gap-2">
-          <button className="flex items-center rounded-xl bg-background px-3 py-2 text-sm font-medium shadow-sm transition cursor-pointer">
+          <button className="flex items-center gap-2 rounded-xl  px-3 py-2 text-sm font-medium bg-[#ededed] transition cursor-pointer">
+            <IconChat className="h-4 w-4" />
             Essai 1
           </button>
-          <button className="text-muted-foreground hover:bg-background flex items-center rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+          <button className="text-muted-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+            <IconChat className="h-4 w-4" />
             Essai 2
           </button>
         </div>
-        <div className="mt-auto flex items-center gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
-          <div className="bg-foreground/10 text-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
-            MS
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">Maxens Soldan</div>
-            <div className="text-xs text-muted-foreground">En ligne</div>
+
+        <div className="mt-auto flex flex-col gap-2">
+          <button className="text-muted-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+            <IconSettings className="h-4 w-4" />
+            Paramètres
+          </button>
+          <button className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+            <IconLogout className="h-4 w-4" />
+            Déconnexion
+          </button>
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2 mt-4 mb-2">
+            <div className="bg-foreground/10 text-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
+              MS
+            </div>
+            <div className="leading-tight">
+              <div className="text-sm font-semibold">Maxens Soldan</div>
+              <div className="text-xs text-muted-foreground">En ligne</div>
+            </div>
           </div>
         </div>
       </aside>
@@ -181,7 +247,7 @@ export default function ChatPage() {
                 <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
                   {getFileIcon(uploadedFiles[0].name)}
                   {uploadedFiles.length === 1
-                    ? uploadedFiles[0].name
+                    ? "1 fichier"
                     : `${uploadedFiles.length} fichiers`}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -192,6 +258,14 @@ export default function ChatPage() {
                     >
                       {getFileIcon(file.name)}
                       <span>{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(file.name)}
+                        className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
+                        aria-label={`Supprimer ${file.name}`}
+                      >
+                        <IconX className="h-3 w-3" />
+                      </button>
                     </span>
                   ))}
                   {uploadedFiles.length > 3 && (
@@ -200,6 +274,11 @@ export default function ChatPage() {
                     </span>
                   )}
                 </div>
+                {fileNotice && (
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {fileNotice}
+                  </div>
+                )}
               </div>
             )}
             <div className="flex items-center gap-4">
@@ -331,6 +410,24 @@ function IconPaperclip(props: React.SVGProps<SVGSVGElement>) {
       {...props}
     >
       <path d="M21.44 11.05 12.47 20a5 5 0 0 1-7.07-7.07l9-9a3.5 3.5 0 0 1 4.95 4.95l-9 9a2 2 0 0 1-2.83-2.83l8.5-8.5" />
+    </svg>
+  )
+}
+
+function IconChat(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   )
 }
@@ -535,6 +632,103 @@ function IconVideo(props: React.SVGProps<SVGSVGElement>) {
     >
       <rect x="2" y="7" width="14" height="10" rx="2" ry="2" />
       <path d="m16 9 4-2v10l-4-2" />
+    </svg>
+  )
+}
+
+function IconX(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <line x1="18" x2="6" y1="6" y2="18" />
+      <line x1="6" x2="18" y1="6" y2="18" />
+    </svg>
+  )
+}
+
+function IconSearch(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  )
+}
+
+function IconPlusSquare(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <line x1="12" y1="8" x2="12" y2="16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+  )
+}
+
+function IconSettings(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.09V4a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  )
+}
+
+function IconLogout(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" x2="9" y1="12" y2="12" />
     </svg>
   )
 }
