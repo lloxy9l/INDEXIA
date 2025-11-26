@@ -12,89 +12,89 @@ import {
 
 export function SectionCards() {
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
+    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <Card className="@container/card shadow-none">
         <CardHeader>
-          <CardDescription>Total Revenue</CardDescription>
+          <CardDescription>Requêtes 24h / 7j</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            $1,250.00
+            1.2k / 6.8k
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200">
               <IconTrendingUp />
-              +12.5%
+              +14%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-4" />
+            Requêtes servies vs. semaine passée{" "}
           </div>
-          <div className="text-muted-foreground">
-            Visitors for the last 6 months
-          </div>
+          <div className="text-muted-foreground">SLA suivi en continu</div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card shadow-none">
         <CardHeader>
-          <CardDescription>New Customers</CardDescription>
+          <CardDescription>Temps de réponse moyen</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
+            1.9 s
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
+            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200">
               <IconTrendingDown />
-              -20%
+              -12%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
+            Amélioration depuis tuning RAG{" "}
+          </div>
+          <div className="text-muted-foreground">P95 calculé sur 24h</div>
+        </CardFooter>
+      </Card>
+      <Card className="@container/card shadow-none">
+        <CardHeader>
+          <CardDescription>Réponses avec sources suffisantes</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            87%
+          </CardTitle>
+          <CardAction>
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200">
+              <IconTrendingUp />
+              +4.1%
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            Coverage des citations 
           </div>
           <div className="text-muted-foreground">
-            Acquisition needs attention
+            Score basé sur validation humaine + auto
           </div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card shadow-none">
         <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>Erreurs / timeout / pas de résultat</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
+            3.2%
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +12.5%
+            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200">
+              <IconTrendingDown />
+              -1.1%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
+            Réductions via retrials + cache{" "}
           </div>
-          <div className="text-muted-foreground">Engagement exceed targets</div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Growth Rate</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            4.5%
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
-              +4.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
+          <div className="text-muted-foreground">
+            Requêtes en échec sur les 7 derniers jours
           </div>
-          <div className="text-muted-foreground">Meets growth projections</div>
         </CardFooter>
       </Card>
     </div>

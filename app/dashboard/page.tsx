@@ -500,6 +500,7 @@ export default function Page() {
   const pipelineGradientId = `${React.useId().replace(/:/g, "")}-pipeline`
   const topUsersGradientId = `${React.useId().replace(/:/g, "")}-users`
   const topDocsGradientId = `${React.useId().replace(/:/g, "")}-docs`
+  const benchmarkGradBase = React.useId().replace(/:/g, "")
   const [activeSection, setActiveSection] = React.useState("Dashboard Admin")
   const [usersState, setUsersState] = React.useState(defaultUsers)
   const [pendingAdminToggle, setPendingAdminToggle] = React.useState<{
@@ -831,14 +832,32 @@ export default function Page() {
             className="aspect-video rounded-lg bg-white/70 dark:bg-card border border-primary/15"
           >
             <LineChart data={benchmarkPipelineRelevance} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <defs>
+                <linearGradient id={`${benchmarkGradBase}-standard`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.standard} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.standard} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-rerank`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.rerank} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.rerank} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-multi`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.multi} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.multi} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-agent`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.agent} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.agent} stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" />
               <YAxis domain={[0.6, 0.9]} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="standard" stroke="var(--color-standard)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="rerank" stroke="var(--color-rerank)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="multi" stroke="var(--color-multi)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="agent" stroke="var(--color-agent)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="standard" stroke={`url(#${benchmarkGradBase}-standard)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="rerank" stroke={`url(#${benchmarkGradBase}-rerank)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="multi" stroke={`url(#${benchmarkGradBase}-multi)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="agent" stroke={`url(#${benchmarkGradBase}-agent)`} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
           <ChartContainer
@@ -938,14 +957,32 @@ export default function Page() {
             className="aspect-video rounded-lg bg-white/70 dark:bg-card border border-primary/15"
           >
             <LineChart data={usageRequestsByModel} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <defs>
+                <linearGradient id={`${benchmarkGradBase}-llama`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.llama} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.llama} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-mistral`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.mistral} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.mistral} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-qwen`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.qwen} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.qwen} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-gpt4o`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.gpt4o} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.gpt4o} stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="llama" stroke="var(--color-llama)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="mistral" stroke="var(--color-mistral)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="qwen" stroke="var(--color-qwen)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="gpt4o" stroke="var(--color-gpt4o)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="llama" stroke={`url(#${benchmarkGradBase}-llama)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="mistral" stroke={`url(#${benchmarkGradBase}-mistral)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="qwen" stroke={`url(#${benchmarkGradBase}-qwen)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="gpt4o" stroke={`url(#${benchmarkGradBase}-gpt4o)`} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
           <ChartContainer
@@ -957,13 +994,27 @@ export default function Page() {
             className="aspect-video rounded-lg bg-white/70 dark:bg-card border border-primary/15"
           >
             <LineChart data={usageResponseTime} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <defs>
+                <linearGradient id={`${benchmarkGradBase}-rt-standard`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.standard} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.standard} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-rt-rerank`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.rerank} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.rerank} stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id={`${benchmarkGradBase}-rt-multi`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.multi} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.multi} stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="standard" stroke="var(--color-standard)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="rerank" stroke="var(--color-rerank)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="multi" stroke="var(--color-multi)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="standard" stroke={`url(#${benchmarkGradBase}-rt-standard)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="rerank" stroke={`url(#${benchmarkGradBase}-rt-rerank)`} strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="multi" stroke={`url(#${benchmarkGradBase}-rt-multi)`} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
           <ChartContainer
@@ -1019,11 +1070,17 @@ export default function Page() {
             className="aspect-video rounded-lg bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:bg-card border border-primary/15"
           >
             <LineChart data={costMonthly} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <defs>
+                <linearGradient id={`${benchmarkGradBase}-cost-cumul`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={chartColors.costCumul} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={chartColors.costCumul} stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="cost" stroke={`url(#${benchmarkGradBase}-cost-cumul)`} strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
         </CardContent>
