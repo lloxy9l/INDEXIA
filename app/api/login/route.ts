@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email et mot de passe requis." },
+        { error: "Email et mot de passe requis" },
         { status: 400 }
       )
     }
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Utilisateur introuvable." },
+        { error: "Utilisateur introuvable" },
         { status: 404 }
       )
     }
@@ -67,16 +67,16 @@ export async function POST(request: Request) {
     const passwordHash = hashPassword(password)
     if (user.passwordHash !== passwordHash) {
       return NextResponse.json(
-        { error: "Mot de passe incorrect." },
+        { error: "Mot de passe incorrect" },
         { status: 401 }
       )
     }
 
-    return authResponse({ message: "Connexion réussie.", email }, 200, email)
+    return authResponse({ message: "Connexion réussie", email }, 200, email)
   } catch (error) {
     console.error("Login error", error)
     return NextResponse.json(
-      { error: "Erreur lors de la connexion." },
+      { error: "Erreur lors de la connexion" },
       { status: 500 }
     )
   }
