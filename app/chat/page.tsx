@@ -8,8 +8,16 @@ import { useRouter } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import type { ChatRecord } from "@/lib/chats"
 import type { ProjectRecord } from "@/lib/projects"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -988,16 +996,488 @@ export default function ChatPage() {
   return (
     <SidebarProvider
       style={
-    {
-      "--sidebar-width": "calc(var(--spacing) * 72)",
-      "--header-height": "calc(var(--spacing) * 12)",
-    } as React.CSSProperties
-  }
->
-      <AppSidebar variant="inset" />
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <Sidebar
+        collapsible="icon"
+        variant="inset"
+        className="min-h-[calc(100vh-var(--header-height))]"
+      >
+        <SidebarHeader className="pb-2 pt-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Image
+                src={logoSrc}
+                alt="Logo"
+                width={140}
+                height={140}
+                priority
+                unoptimized
+              />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent className="gap-4 px-3 pb-4">
+          <div className="relative">
+            <IconSearch className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Rechercher un chat"
+              className="w-full rounded-xl border border-border bg-background px-10 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="button"
+            className="text-foreground hover:bg-muted disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+            onClick={handleNewChat}
+            disabled={isCreatingChat || !session}
+          >
+            <IconChat className="h-4 w-4" />
+            {isCreatingChat ? "Création..." : "Nouveau chat"}
+          </button>
+          <button
+            className="text-foreground hover:bg-muted disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+            onClick={openProjectModal}
+            disabled={isCreatingProject || !session}
+          >
+            <IconPlusSquare className="h-4 w-4" />
+            {isCreatingProject ? "Création..." : "Nouveau projet"}
+          </button>
+
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+            <IconMenu className="h-3 w-3" />
+            Chats sans projet
+          </div>
+          <div className="flex flex-col gap-2">
+            {unassignedChats.map((chat) => {
+              const isActiveChat = chat.id === selectedChatId
+              const isRenaming = renamingChatId === chat.id
+              return (
+                <div
+                  key={chat.id}
+                  className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
+                    isActiveChat ? "bg-muted border border-border" : "hover:bg-muted/60"
+                  }`}
+                >
+                  {isRenaming ? (
+                    <>
+                      <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
+                        <IconChat className="h-4 w-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={chatTitleInput}
+                          onChange={(e) => setChatTitleInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              handleRenameChat()
+                            }
+                          }}
+                        />
+                      </div>
+                      <button
+                        className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRenameChat()
+                        }}
+                        aria-label="Enregistrer le titre"
+                      >
+                        <IconCheck className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          cancelRename()
+                        }}
+                        aria-label="Annuler"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedProjectId(null)
+                          setSelectedChatId(chat.id)
+                        }}
+                        className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
+                          isActiveChat
+                            ? "font-semibold text-foreground"
+                            : " text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        <IconChat className="h-4 w-4" />
+                        <span className="truncate">{chat.title || "Sans titre"}</span>
+                      </button>
+                      <div className="relative">
+                        <button
+                          className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActionMenuChatId((prev) => (prev === chat.id ? null : chat.id))
+                          }}
+                          aria-label="Actions du chat"
+                        >
+                          <IconMore className="h-4 w-4" />
+                        </button>
+                        {actionMenuChatId === chat.id && (
+                          <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
+                            <button
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setProjectPickerChatId(chat.id)
+                                setActionMenuChatId(null)
+                              }}
+                            >
+                              <IconMove className="h-4 w-4" />
+                              <span>Déplacer</span>
+                            </button>
+                            <button
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                startRename(chat)
+                                setActionMenuChatId(null)
+                              }}
+                            >
+                              <IconEdit className="h-4 w-4" />
+                              <span>Renommer</span>
+                            </button>
+                            <button
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setActionMenuChatId(null)
+                                handleDeleteChat(chat.id)
+                              }}
+                              disabled={deletingChatId === chat.id}
+                            >
+                              <IconTrash className="h-4 w-4" />
+                              <span>Supprimer</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+            {!chatError && unassignedChats.length === 0 && (
+              <span className="text-xs text-muted-foreground px-1">Aucun chat pour le moment</span>
+            )}
+            {chatError && <span className="text-xs text-red-500">{chatError}</span>}
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+            <IconMenu className="h-3 w-3" />
+            Vos projets
+          </div>
+          <div className="flex flex-col gap-3">
+            {loadingChats ? (
+              <span className="text-xs text-muted-foreground">Chargement...</span>
+            ) : null}
+            {projectError && !loadingChats ? (
+              <span className="text-xs text-red-500">{projectError}</span>
+            ) : null}
+            {!loadingChats && projects.length === 0 && (
+              <span className="text-xs text-muted-foreground">
+                Aucun projet pour le moment
+              </span>
+            )}
+            {projects.map((project) => {
+              const projectChats = chats.filter((chat) => chat.projectId === project.id)
+              const isActiveProject = project.id === selectedProjectId
+              const visibleChats = isActiveProject
+                ? filteredChats.filter((chat) => chat.projectId === project.id)
+                : []
+              const isRenamingProject = renamingProjectId === project.id
+              return (
+                <div
+                  key={project.id}
+                  className="rounded-xl border border-border bg-background/60 shadow-sm"
+                >
+                  <div
+                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                      isActiveProject ? "bg-muted/70 font-semibold" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedProjectId(project.id)
+                        if (!projectChats.some((chat) => chat.id === selectedChatId)) {
+                          setSelectedChatId(projectChats[0]?.id ?? null)
+                        }
+                      }}
+                      className="flex flex-1 items-start gap-3 text-left"
+                    >
+                      <IconFolder className="h-4 w-4 mt-1" />
+                      <div className="flex flex-col flex-1">
+                        {isRenamingProject ? (
+                          <input
+                            type="text"
+                            value={projectRenameInput}
+                            onChange={(e) => setProjectRenameInput(e.target.value)}
+                            className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                handleRenameProject()
+                              }
+                            }}
+                          />
+                        ) : (
+                          <>
+                            <span className="truncate">{project.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {projectChats.length} {projectChats.length > 1 ? "chats" : "chat"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                    {isRenamingProject ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRenameProject()
+                          }}
+                          aria-label="Enregistrer le projet"
+                        >
+                          <IconCheck className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            cancelRenameProject()
+                          }}
+                          aria-label="Annuler"
+                        >
+                          <IconX className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startRenameProject(project)
+                          }}
+                          aria-label="Renommer le projet"
+                        >
+                          <IconEdit className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="text-muted-foreground hover:text-red-600 rounded-full p-1 transition cursor-pointer disabled:opacity-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteProject(project.id)
+                          }}
+                          disabled={deletingProjectId === project.id}
+                          aria-label="Supprimer le projet"
+                        >
+                          <IconTrash className="h-4 w-4" />
+                        </button>
+                        {isActiveProject ? (
+                          <span className="text-[10px] font-semibold text-primary px-1">
+                            Actif
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  {isActiveProject ? (
+                    <div className="flex flex-col gap-2 px-2 pb-3 pt-1">
+                      {visibleChats.map((chat) => {
+                        const isActiveChat = chat.id === selectedChatId
+                        const isRenaming = renamingChatId === chat.id
+                        return (
+                          <div
+                            key={chat.id}
+                            className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
+                              isActiveChat ? "bg-[#ededed] border border-border" : ""
+                            }`}
+                          >
+                            {isRenaming ? (
+                              <>
+                                <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
+                                  <IconChat className="h-4 w-4 text-muted-foreground" />
+                                  <input
+                                    type="text"
+                                    value={chatTitleInput}
+                                    onChange={(e) => setChatTitleInput(e.target.value)}
+                                    className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault()
+                                        handleRenameChat()
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <button
+                                  className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRenameChat()
+                                  }}
+                                  aria-label="Enregistrer le titre"
+                                >
+                                  <IconCheck className="h-4 w-4" />
+                                </button>
+                                <button
+                                  className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    cancelRename()
+                                  }}
+                                  aria-label="Annuler"
+                                >
+                                  <IconX className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedProjectId(project.id)
+                                    setSelectedChatId(chat.id)
+                                  }}
+                                  className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
+                                    isActiveChat
+                                      ? "font-semibold text-foreground"
+                                      : " text-muted-foreground hover:bg-muted/80"
+                                  }`}
+                                >
+                                  <IconChat className="h-4 w-4" />
+                                  <span className="truncate">{chat.title || "Sans titre"}</span>
+                                </button>
+                                <div className="relative">
+                                  <button
+                                    className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setActionMenuChatId((prev) =>
+                                        prev === chat.id ? null : chat.id
+                                      )
+                                    }}
+                                    aria-label="Actions du chat"
+                                  >
+                                    <IconMore className="h-4 w-4" />
+                                  </button>
+                                  {actionMenuChatId === chat.id && (
+                                    <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
+                                      <button
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setProjectPickerChatId(chat.id)
+                                          setActionMenuChatId(null)
+                                        }}
+                                      >
+                                        <IconMove className="h-4 w-4" />
+                                        <span>Déplacer</span>
+                                      </button>
+                                      <button
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          startRename(chat)
+                                          setActionMenuChatId(null)
+                                        }}
+                                      >
+                                        <IconEdit className="h-4 w-4" />
+                                        <span>Renommer</span>
+                                      </button>
+                                      <button
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setActionMenuChatId(null)
+                                          handleDeleteChat(chat.id)
+                                        }}
+                                        disabled={deletingChatId === chat.id}
+                                      >
+                                        <IconTrash className="h-4 w-4" />
+                                        <span>Supprimer</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })}
+                      {!chatError && visibleChats.length === 0 && (
+                        <span className="text-xs text-muted-foreground px-1">
+                          {searchTerm
+                            ? "Aucun chat ne correspond à la recherche"
+                            : "Aucun chat dans ce projet"}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </SidebarContent>
+        <SidebarFooter className="px-3 pb-4">
+          <div className="flex flex-col gap-2">
+            <button
+              className="text-muted-foreground hover:bg-muted flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+              onClick={() => setShowSettings(true)}
+            >
+              <IconSettings className="h-4 w-4" />
+              Paramètres
+            </button>
+            <button
+              className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+              onClick={handleLogout}
+            >
+              <IconLogout className="h-4 w-4" />
+              Déconnexion
+            </button>
+            <div className="flex items-center gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
+              <div className="bg-foreground/10 text-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
+                {userInitials}
+              </div>
+              <div className="leading-tight">
+                <div className="text-sm font-semibold">{userLabel}</div>
+                <div className="text-xs text-muted-foreground">
+                  {session ? "Connecté" : "En attente..."}
+                </div>
+              </div>
+            </div>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+
       <SidebarInset>
         <SiteHeader title={headerTitle} />
-        <div className="bg-background text-foreground flex min-h-[calc(100vh-var(--header-height))] flex-1 gap-6 px-4 pb-8 pt-4 lg:px-8">
+        <div className="bg-background text-foreground flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
           {actionMenuChatId && (
             <div
               className="fixed inset-0 z-30"
@@ -1005,671 +1485,205 @@ export default function ChatPage() {
               aria-hidden="true"
             />
           )}
-
-          <div className="flex flex-1 gap-6">
-            <div className="bg-white/90 dark:bg-card border border-border/60 shadow-sm rounded-3xl p-6 w-[360px] shrink-0 flex flex-col gap-4">
-              <div className="flex items-center justify-center">
-                <Image
-                  src={logoSrc}
-                  alt="Logo"
-                  width={140}
-                  height={140}
-                  priority
-                  unoptimized
+          <div className="flex flex-1 flex-col items-center justify-center rounded-3xl  bg-white/90 p-8">
+            <div className="mb-6 flex items-center justify-center">
+              <Image
+                src={logoSrc}
+                alt="Logo"
+                width={180}
+                height={180}
+                priority
+                unoptimized
+              />
+            </div>
+            <Card className="w-[840px] max-w-full rounded-3xl border border-border/70 bg-white shadow-sm">
+              <CardContent className="flex flex-col gap-1 px-6 py-1">
+                <textarea
+                  rows={1}
+                  ref={textareaRef}
+                  onInput={handleTextareaInput}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Demandez, cherchez ou faites ce que vous voulez..."
+                  className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
                 />
-              </div>
 
-              <div className="relative">
-                <IconSearch className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Rechercher un chat"
-                  className="w-full rounded-xl border border-border bg-background px-10 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <button
-                type="button"
-                className="text-foreground hover:bg-muted disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
-                onClick={handleNewChat}
-                disabled={isCreatingChat || !session}
-              >
-                <IconChat className="h-4 w-4" />
-                {isCreatingChat ? "Création..." : "Nouveau chat"}
-              </button>
-              <button
-                className="text-foreground hover:bg-muted disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
-                onClick={openProjectModal}
-                disabled={isCreatingProject || !session}
-              >
-                <IconPlusSquare className="h-4 w-4" />
-                {isCreatingProject ? "Création..." : "Nouveau projet"}
-              </button>
-
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                <IconMenu className="h-3 w-3" />
-                Chats sans projet
-              </div>
-              <div className="flex flex-col gap-2">
-                {unassignedChats.map((chat) => {
-                  const isActiveChat = chat.id === selectedChatId
-                  const isRenaming = renamingChatId === chat.id
-                  return (
-                    <div
-                      key={chat.id}
-                      className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
-                        isActiveChat ? "bg-muted border border-border" : "hover:bg-muted/60"
-                      }`}
-                    >
-                      {isRenaming ? (
-                        <>
-                          <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
-                            <IconChat className="h-4 w-4 text-muted-foreground" />
-                            <input
-                              type="text"
-                              value={chatTitleInput}
-                              onChange={(e) => setChatTitleInput(e.target.value)}
-                              className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault()
-                                  handleRenameChat()
-                                }
-                              }}
-                            />
-                          </div>
+                {uploadedFiles.length > 0 && (
+                  <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 mb-3">
+                    <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
+                      {getFileIcon(uploadedFiles[0].name)}
+                      {uploadedFiles.length === 1
+                        ? "1 fichier"
+                        : `${uploadedFiles.length} fichiers`}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {uploadedFiles.slice(0, 3).map((file) => (
+                        <span
+                          key={file.name}
+                          className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
+                        >
+                          {getFileIcon(file.name)}
+                          <span>{file.name}</span>
                           <button
-                            className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRenameChat()
-                            }}
-                            aria-label="Enregistrer le titre"
+                            type="button"
+                            onClick={() => handleRemoveFile(file.name)}
+                            className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
+                            aria-label={`Supprimer ${file.name}`}
                           >
-                            <IconCheck className="h-4 w-4" />
+                            <IconX className="h-3 w-3" />
                           </button>
-                          <button
-                            className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              cancelRename()
-                            }}
-                            aria-label="Annuler"
-                          >
-                            <IconX className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              setSelectedProjectId(null)
-                              setSelectedChatId(chat.id)
-                            }}
-                            className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
-                              isActiveChat
-                                ? "font-semibold text-foreground"
-                                : " text-muted-foreground hover:bg-muted/80"
-                            }`}
-                          >
-                            <IconChat className="h-4 w-4" />
-                            <span className="truncate">{chat.title || "Sans titre"}</span>
-                          </button>
-                          <div className="relative">
-                            <button
-                              className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setActionMenuChatId((prev) => (prev === chat.id ? null : chat.id))
-                              }}
-                              aria-label="Actions du chat"
-                            >
-                              <IconMore className="h-4 w-4" />
-                            </button>
-                            {actionMenuChatId === chat.id && (
-                              <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
-                                <button
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setProjectPickerChatId(chat.id)
-                                    setActionMenuChatId(null)
-                                  }}
-                                >
-                                  <IconMove className="h-4 w-4" />
-                                  <span>Déplacer</span>
-                                </button>
-                                <button
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    startRename(chat)
-                                    setActionMenuChatId(null)
-                                  }}
-                                >
-                                  <IconEdit className="h-4 w-4" />
-                                  <span>Renommer</span>
-                                </button>
-                                <button
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setActionMenuChatId(null)
-                                    handleDeleteChat(chat.id)
-                                  }}
-                                  disabled={deletingChatId === chat.id}
-                                >
-                                  <IconTrash className="h-4 w-4" />
-                                  <span>Supprimer</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
+                        </span>
+                      ))}
+                      {uploadedFiles.length > 3 && (
+                        <span className="rounded-full bg-background px-2 py-1 shadow-sm">
+                          +{uploadedFiles.length - 3} autres
+                        </span>
                       )}
                     </div>
-                  )
-                })}
-                {!chatError && unassignedChats.length === 0 && (
-                  <span className="text-xs text-muted-foreground px-1">Aucun chat pour le moment</span>
-                )}
-                {chatError && <span className="text-xs text-red-500">{chatError}</span>}
-              </div>
-
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                <IconMenu className="h-3 w-3" />
-                Vos projets
-              </div>
-              <div className="flex flex-col gap-3">
-                {loadingChats ? (
-                  <span className="text-xs text-muted-foreground">Chargement...</span>
-                ) : null}
-                {projectError && !loadingChats ? (
-                  <span className="text-xs text-red-500">{projectError}</span>
-                ) : null}
-                {!loadingChats && projects.length === 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    Aucun projet pour le moment
-                  </span>
-                )}
-                {projects.map((project) => {
-                  const projectChats = chats.filter((chat) => chat.projectId === project.id)
-                  const isActiveProject = project.id === selectedProjectId
-                  const visibleChats = isActiveProject
-                    ? filteredChats.filter((chat) => chat.projectId === project.id)
-                    : []
-                  const isRenamingProject = renamingProjectId === project.id
-                  return (
-                    <div
-                      key={project.id}
-                      className="rounded-xl border border-border bg-background/60 shadow-sm"
-                    >
-                      <div
-                        className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-sm transition ${
-                          isActiveProject ? "bg-muted/70 font-semibold" : "hover:bg-muted/50"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedProjectId(project.id)
-                            if (!projectChats.some((chat) => chat.id === selectedChatId)) {
-                              setSelectedChatId(projectChats[0]?.id ?? null)
-                            }
-                          }}
-                          className="flex flex-1 items-start gap-3 text-left"
-                        >
-                          <IconFolder className="h-4 w-4 mt-1" />
-                          <div className="flex flex-col flex-1">
-                            {isRenamingProject ? (
-                              <input
-                                type="text"
-                                value={projectRenameInput}
-                                onChange={(e) => setProjectRenameInput(e.target.value)}
-                                className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault()
-                                    handleRenameProject()
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <>
-                                <span className="truncate">{project.name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {projectChats.length} {projectChats.length > 1 ? "chats" : "chat"}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </button>
-                        {isRenamingProject ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRenameProject()
-                              }}
-                              aria-label="Enregistrer le projet"
-                            >
-                              <IconCheck className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                cancelRenameProject()
-                              }}
-                              aria-label="Annuler"
-                            >
-                              <IconX className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                startRenameProject(project)
-                              }}
-                              aria-label="Renommer le projet"
-                            >
-                              <IconEdit className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-muted-foreground hover:text-red-600 rounded-full p-1 transition cursor-pointer disabled:opacity-50"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteProject(project.id)
-                              }}
-                              disabled={deletingProjectId === project.id}
-                              aria-label="Supprimer le projet"
-                            >
-                              <IconTrash className="h-4 w-4" />
-                            </button>
-                            {isActiveProject ? (
-                              <span className="text-[10px] font-semibold text-primary px-1">
-                                Actif
-                              </span>
-                            ) : null}
-                          </div>
-                        )}
+                    {fileNotice && (
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {fileNotice}
                       </div>
-                      {isActiveProject ? (
-                        <div className="flex flex-col gap-2 px-2 pb-3 pt-1">
-                          {visibleChats.map((chat) => {
-                            const isActiveChat = chat.id === selectedChatId
-                            const isRenaming = renamingChatId === chat.id
-                            return (
-                              <div
-                                key={chat.id}
-                                className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
-                                  isActiveChat ? "bg-[#ededed] border border-border" : ""
-                                }`}
-                              >
-                                {isRenaming ? (
-                                  <>
-                                    <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
-                                      <IconChat className="h-4 w-4 text-muted-foreground" />
-                                      <input
-                                        type="text"
-                                        value={chatTitleInput}
-                                        onChange={(e) => setChatTitleInput(e.target.value)}
-                                        className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            e.preventDefault()
-                                            handleRenameChat()
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                    <button
-                                      className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleRenameChat()
-                                      }}
-                                      aria-label="Enregistrer le titre"
-                                    >
-                                      <IconCheck className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        cancelRename()
-                                      }}
-                                      aria-label="Annuler"
-                                    >
-                                      <IconX className="h-4 w-4" />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedProjectId(project.id)
-                                        setSelectedChatId(chat.id)
-                                      }}
-                                      className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
-                                        isActiveChat
-                                          ? "font-semibold text-foreground"
-                                          : " text-muted-foreground hover:bg-muted/80"
-                                      }`}
-                                    >
-                                      <IconChat className="h-4 w-4" />
-                                      <span className="truncate">{chat.title || "Sans titre"}</span>
-                                    </button>
-                                    <div className="relative">
-                                      <button
-                                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          setActionMenuChatId((prev) =>
-                                            prev === chat.id ? null : chat.id
-                                          )
-                                        }}
-                                        aria-label="Actions du chat"
-                                      >
-                                        <IconMore className="h-4 w-4" />
-                                      </button>
-                                      {actionMenuChatId === chat.id && (
-                                        <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
-                                          <button
-                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setProjectPickerChatId(chat.id)
-                                              setActionMenuChatId(null)
-                                            }}
-                                          >
-                                            <IconMove className="h-4 w-4" />
-                                            <span>Déplacer</span>
-                                          </button>
-                                          <button
-                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              startRename(chat)
-                                              setActionMenuChatId(null)
-                                            }}
-                                          >
-                                            <IconEdit className="h-4 w-4" />
-                                            <span>Renommer</span>
-                                          </button>
-                                          <button
-                                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setActionMenuChatId(null)
-                                              handleDeleteChat(chat.id)
-                                            }}
-                                            disabled={deletingChatId === chat.id}
-                                          >
-                                            <IconTrash className="h-4 w-4" />
-                                            <span>Supprimer</span>
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            )
-                          })}
-                          {!chatError && visibleChats.length === 0 && (
-                            <span className="text-xs text-muted-foreground px-1">
-                              {searchTerm
-                                ? "Aucun chat ne correspond à la recherche"
-                                : "Aucun chat dans ce projet"}
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="mt-auto flex flex-col gap-2">
-                <button
-                  className="text-muted-foreground hover:bg-muted flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
-                  onClick={() => setShowSettings(true)}
-                >
-                  <IconSettings className="h-4 w-4" />
-                  Paramètres
-                </button>
-                <button
-                  className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
-                  onClick={handleLogout}
-                >
-                  <IconLogout className="h-4 w-4" />
-                  Déconnexion
-                </button>
-                <div className="flex items-center gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
-                  <div className="bg-foreground/10 text-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
-                    {userInitials}
-                  </div>
-                  <div className="leading-tight">
-                    <div className="text-sm font-semibold">{userLabel}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {session ? "Connecté" : "En attente..."}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col items-center justify-center rounded-3xl border border-border/60 bg-white/90 p-8 shadow-sm">
-              <div className="mb-6 flex items-center justify-center">
-                <Image
-                  src={logoSrc}
-                  alt="Logo"
-                  width={180}
-                  height={180}
-                  priority
-                  unoptimized
-                />
-              </div>
-              <Card className="w-[840px] max-w-full rounded-3xl border border-border/70 bg-white shadow-sm">
-                <CardContent className="flex flex-col gap-1 px-6 py-1">
-                  <textarea
-                    rows={1}
-                    ref={textareaRef}
-                    onInput={handleTextareaInput}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Demandez, cherchez ou faites ce que vous voulez..."
-                    className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
-                  />
-
-            {uploadedFiles.length > 0 && (
-              <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 mb-3">
-                <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
-                  {getFileIcon(uploadedFiles[0].name)}
-                  {uploadedFiles.length === 1
-                    ? "1 fichier"
-                    : `${uploadedFiles.length} fichiers`}
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {uploadedFiles.slice(0, 3).map((file) => (
-                    <span
-                      key={file.name}
-                      className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
-                    >
-                      {getFileIcon(file.name)}
-                      <span>{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(file.name)}
-                        className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
-                        aria-label={`Supprimer ${file.name}`}
-                      >
-                        <IconX className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                  {uploadedFiles.length > 3 && (
-                    <span className="rounded-full bg-background px-2 py-1 shadow-sm">
-                      +{uploadedFiles.length - 3} autres
-                    </span>
-                  )}
-                </div>
-                {fileNotice && (
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {fileNotice}
+                    )}
                   </div>
                 )}
-              </div>
-            )}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  multiple
-                  onChange={(e) => handleFilesSelected(e.target.files)}
-                />
-                <button
-                  type="button"
-                  onClick={handleFileClick}
-                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md bg-transparent transition cursor-pointer"
-                  aria-label="Joindre un fichier"
-                >
-                  <IconPaperclip className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
-                    isListening ? "bg-black text-white border-black" : "bg-transparent"
-                  }`}
-                  aria-label="Dicter un message"
-                  onClick={handleVoiceClick}
-                >
-                  <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
-                </button>
-              </div>
-              <div className="relative flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setOpen((v) => !v)}
-                  className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted cursor-pointer"
-                >
-                  <Image
-                    src={selectedModel.icon}
-                    alt={selectedModel.label}
-                    width={18}
-                    height={18}
-                    className="rounded"
-                  />
-                  <span>{selectedModel.label}</span>
-                </button>
-                {open && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setOpen(false)}
-                      aria-hidden="true"
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => handleFilesSelected(e.target.files)}
                     />
-                    <div className="border-border bg-background absolute left-0 top-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
-                      <ul className="flex flex-col divide-y divide-border/70">
-                        {models.map((model) => (
-                          <li key={model.value}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedModel(model)
-                                setOpen(false)
-                              }}
-                              className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted cursor-pointer"
-                            >
-                              <Image
-                                src={model.icon}
-                                alt={model.label}
-                                width={18}
-                                height={18}
-                                className="rounded"
-                              />
-                              <span className="flex-1 text-left">{model.label}</span>
-                              {selectedModel.value === model.value ? (
-                                <span className="text-xs text-primary">●</span>
-                              ) : null}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </div>
-              <Button
-                size="icon"
-                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl"
-              >
-                <IconArrowUp className="h-10 w-10" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
-          {[
-            {
-              icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
-              label: "Analyse data",
-              bg: "bg-cyan-50",
-              text: "text-cyan-900",
-              border: "border-cyan-200",
-            },
-            {
-              icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
-              label: "Résumer texte",
-              bg: "bg-amber-50",
-              text: "text-amber-900",
-              border: "border-amber-200",
-            },
-            {
-              icon: <IconShield className="h-4 w-4 text-emerald-700" />,
-              label: "Vérifier droits",
-              bg: "bg-emerald-50",
-              text: "text-emerald-900",
-              border: "border-emerald-200",
-            },
-            {
-              icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
-              label: "Comparer pipelines",
-              bg: "bg-indigo-50",
-              text: "text-indigo-900",
-              border: "border-indigo-200",
-            },
-            {
-              icon: <IconChart className="h-4 w-4 text-rose-700" />,
-              label: "Benchmark",
-              bg: "bg-rose-50",
-              text: "text-rose-900",
-              border: "border-rose-200",
-            },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-            ))}
-          </div>
+                    <button
+                      type="button"
+                      onClick={handleFileClick}
+                      className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md bg-transparent transition cursor-pointer"
+                      aria-label="Joindre un fichier"
+                    >
+                      <IconPaperclip className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
+                        isListening ? "bg-black text-white border-black" : "bg-transparent"
+                      }`}
+                      aria-label="Dicter un message"
+                      onClick={handleVoiceClick}
+                    >
+                      <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
+                    </button>
+                  </div>
+                  <div className="relative flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setOpen((v) => !v)}
+                      className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted cursor-pointer"
+                    >
+                      <Image
+                        src={selectedModel.icon}
+                        alt={selectedModel.label}
+                        width={18}
+                        height={18}
+                        className="rounded"
+                      />
+                      <span>{selectedModel.label}</span>
+                    </button>
+                    {open && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpen(false)}
+                          aria-hidden="true"
+                        />
+                        <div className="border-border bg-background absolute left-0 top-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
+                          <ul className="flex flex-col divide-y divide-border/70">
+                            {models.map((model) => (
+                              <li key={model.value}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedModel(model)
+                                    setOpen(false)
+                                  }}
+                                  className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted cursor-pointer"
+                                >
+                                  <Image
+                                    src={model.icon}
+                                    alt={model.label}
+                                    width={18}
+                                    height={18}
+                                    className="rounded"
+                                  />
+                                  <span className="flex-1 text-left">{model.label}</span>
+                                  {selectedModel.value === model.value ? (
+                                    <span className="text-xs text-primary">●</span>
+                                  ) : null}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    size="icon"
+                    className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl"
+                  >
+                    <IconArrowUp className="h-10 w-10" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
+              {[
+                {
+                  icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
+                  label: "Analyse data",
+                  bg: "bg-cyan-50",
+                  text: "text-cyan-900",
+                  border: "border-cyan-200",
+                },
+                {
+                  icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
+                  label: "Résumer texte",
+                  bg: "bg-amber-50",
+                  text: "text-amber-900",
+                  border: "border-amber-200",
+                },
+                {
+                  icon: <IconShield className="h-4 w-4 text-emerald-700" />,
+                  label: "Vérifier droits",
+                  bg: "bg-emerald-50",
+                  text: "text-emerald-900",
+                  border: "border-emerald-200",
+                },
+                {
+                  icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
+                  label: "Comparer pipelines",
+                  bg: "bg-indigo-50",
+                  text: "text-indigo-900",
+                  border: "border-indigo-200",
+                },
+                {
+                  icon: <IconChart className="h-4 w-4 text-rose-700" />,
+                  label: "Benchmark",
+                  bg: "bg-rose-50",
+                  text: "text-rose-900",
+                  border: "border-rose-200",
+                },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
