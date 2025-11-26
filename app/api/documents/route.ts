@@ -2,6 +2,13 @@ import fs from "fs/promises"
 import path from "path"
 import { NextResponse } from "next/server"
 
+import {
+  readDocuments,
+  upsertDocument,
+  writeDocuments,
+  type DocumentRecord,
+} from "@/lib/documents"
+
 export const runtime = "nodejs"
 
 const uploadDir = path.join(process.cwd(), "data", "doc")
@@ -18,6 +25,13 @@ function formatFileSize(bytes: number) {
 function sanitizeFilename(name: string) {
   const safe = name.replace(/[^a-zA-Z0-9._-]/g, "_")
   return safe || `fichier-${Date.now()}`
+}
+
+function toApiDoc(doc: DocumentRecord) {
+  return {
+    ...doc,
+    size: formatFileSize(doc.size),
+  }
 }
 
 async function ensureUploadDir() {
@@ -43,30 +57,56 @@ async function buildFilePath(originalName: string) {
 export async function GET() {
   try {
     await ensureUploadDir()
-    const entries = await fs.readdir(uploadDir, { withFileTypes: true })
-    const documents = await Promise.all(
-      entries
-        .filter((entry) => entry.isFile())
-        .map(async (entry) => {
-          const filePath = path.join(uploadDir, entry.name)
-          const stats = await fs.stat(filePath)
-          const ext = path.extname(entry.name).replace(".", "").toUpperCase()
+    const [entries, storedDocuments] = await Promise.all([
+      fs.readdir(uploadDir, { withFileTypes: true }),
+      readDocuments(),
+    ])
 
-          return {
-            id: `DOC-FS-${entry.name}`,
-            name: entry.name,
-            type: ext || "FILE",
-            category: "Import",
-            size: formatFileSize(stats.size),
-            uploadedAt: stats.mtime.toISOString(),
-            uploader: "Upload dashboard",
-            confidentiality: "Public interne",
-            status: "Stocké",
-          }
-        })
-    )
+    let documents: DocumentRecord[] = [...storedDocuments]
+    let updated = false
 
-    return NextResponse.json({ documents })
+    for (const entry of entries) {
+      if (!entry.isFile()) continue
+      const filePath = path.join(uploadDir, entry.name)
+      const stats = await fs.stat(filePath)
+      const ext = path.extname(entry.name).replace(".", "").toUpperCase()
+      const id = `DOC-FS-${entry.name}`
+      const existing = documents.find((doc) => doc.id === id || doc.storedName === entry.name)
+
+      if (!existing) {
+        const record: DocumentRecord = {
+          id,
+          name: entry.name,
+          storedName: entry.name,
+          type: ext || "FILE",
+          category: "Import",
+          size: stats.size,
+          uploadedAt: stats.mtime.toISOString(),
+          uploader: "Upload dashboard",
+          confidentiality: "Public interne",
+          status: "Stocké",
+        }
+        documents.push(record)
+        updated = true
+      } else if (!existing.storedName) {
+        documents = upsertDocument(documents, { ...existing, storedName: entry.name })
+        updated = true
+      }
+    }
+
+    const filenames = new Set(entries.filter((e) => e.isFile()).map((e) => e.name))
+    const filtered = documents.filter((doc) => filenames.has(doc.storedName || doc.name))
+    if (filtered.length !== documents.length) {
+      documents = filtered
+      updated = true
+    }
+
+    if (updated) {
+      await writeDocuments(documents)
+    }
+
+    const payload = documents.map(toApiDoc)
+    return NextResponse.json({ documents: payload })
   } catch (error) {
     console.error("Erreur lors de la lecture des documents", error)
     return NextResponse.json(
@@ -100,12 +140,17 @@ export async function POST(request: Request) {
       typeof formData.get("category") === "string"
         ? (formData.get("category") as string)
         : "Non classé"
+    const uploader =
+      typeof formData.get("uploader") === "string" && formData.get("uploader")
+        ? String(formData.get("uploader"))
+        : "Dashboard"
     const confidentiality =
       typeof formData.get("confidentiality") === "string"
         ? (formData.get("confidentiality") as string)
         : "Public interne"
 
     await ensureUploadDir()
+    const existingDocuments = await readDocuments()
 
     const documents = await Promise.all(
       files.map(async (file) => {
@@ -115,28 +160,89 @@ export async function POST(request: Request) {
         const storedName = path.basename(filePath)
         await fs.writeFile(filePath, buffer)
 
-        return {
+        const record: DocumentRecord = {
           id: `DOC-FS-${storedName}`,
           name: storedName,
+          storedName,
           type:
             path.extname(storedName).replace(".", "").toUpperCase() ||
             file.type ||
             "FILE",
           category,
-          size: formatFileSize(buffer.length),
+          size: buffer.length,
           uploadedAt: new Date().toISOString(),
-          uploader: "Dashboard",
+          uploader,
           confidentiality,
           status: "Stocké",
         }
+
+        return record
       })
     )
 
-    return NextResponse.json({ documents })
+    const merged = documents.reduce(
+      (acc, record) => upsertDocument(acc, record),
+      existingDocuments
+    )
+    await writeDocuments(merged)
+
+    return NextResponse.json({ documents: documents.map(toApiDoc) })
   } catch (error) {
     console.error("Erreur lors de l'upload des documents", error)
     return NextResponse.json(
       { error: "Upload impossible pour le moment" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const id =
+      typeof body?.id === "string" && body.id.trim().length ? body.id.trim() : ""
+    const name =
+      typeof body?.name === "string" && body.name.trim().length ? body.name.trim() : ""
+
+    if (!id && !name) {
+      return NextResponse.json(
+        { error: "id ou name requis" },
+        { status: 400 }
+      )
+    }
+
+    await ensureUploadDir()
+    const documents = await readDocuments()
+    const target =
+      documents.find((doc) => doc.id === id) ||
+      documents.find((doc) => doc.name === name) ||
+      documents.find((doc) => doc.storedName === name)
+
+    if (!target) {
+      return NextResponse.json(
+        { error: "Document introuvable" },
+        { status: 404 }
+      )
+    }
+
+    const fileName = target.storedName || target.name
+    const filePath = path.join(uploadDir, fileName)
+    try {
+      await fs.unlink(filePath)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        console.error("Erreur lors de la suppression du fichier", error)
+      }
+    }
+
+    const nextDocs = documents.filter((doc) => doc.id !== target.id)
+    await writeDocuments(nextDocs)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Erreur lors de la suppression du document", error)
+    return NextResponse.json(
+      { error: "Suppression impossible pour le moment" },
       { status: 500 }
     )
   }

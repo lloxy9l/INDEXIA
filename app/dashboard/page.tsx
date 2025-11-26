@@ -549,7 +549,8 @@ function formatDashboardDate(value: string) {
 function toDashboardDocument(
   doc: any,
   fallbackCategory: string,
-  fallbackConfidentiality: string
+  fallbackConfidentiality: string,
+  fallbackUploader = "Upload"
 ): DashboardDocument {
   const size =
     typeof doc?.size === "number"
@@ -579,7 +580,7 @@ function toDashboardDocument(
     uploader:
       typeof doc?.uploader === "string" && doc.uploader
         ? doc.uploader
-        : "Upload",
+        : fallbackUploader,
     confidentiality:
       typeof doc?.confidentiality === "string" && doc.confidentiality
         ? doc.confidentiality
@@ -610,6 +611,11 @@ export default function Page() {
   const topUsersGradientId = `${React.useId().replace(/:/g, "")}-users`
   const topDocsGradientId = `${React.useId().replace(/:/g, "")}-docs`
   const benchmarkGradBase = React.useId().replace(/:/g, "")
+  const [session, setSession] = React.useState<{
+    firstName?: string | null
+    lastName?: string | null
+    email?: string
+  } | null>(null)
   const [activeSection, setActiveSection] = React.useState("Dashboard Admin")
   const [usersState, setUsersState] = React.useState<DashboardUser[]>([])
   const [loadingUsers, setLoadingUsers] = React.useState(true)
@@ -633,11 +639,42 @@ export default function Page() {
   const [uploadingDocs, setUploadingDocs] = React.useState(false)
   const [uploadMessage, setUploadMessage] = React.useState("")
   const [uploadError, setUploadError] = React.useState("")
+  const [deleteDocError, setDeleteDocError] = React.useState("")
+  const [deletingDocumentId, setDeletingDocumentId] = React.useState("")
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [docsTab, setDocsTab] = React.useState("list")
   const [selectedDocId, setSelectedDocId] = React.useState(
     documents[0]?.id ?? ""
   )
+  const uploaderName = React.useMemo(() => {
+    const first = session?.firstName?.trim()
+    if (first) return first
+    const emailPrefix = session?.email?.split("@")?.[0]
+    if (emailPrefix) return emailPrefix
+    return "Upload"
+  }, [session])
+
+  React.useEffect(() => {
+    let active = true
+    const loadSession = async () => {
+      try {
+        const res = await fetch("/api/session")
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok || !payload?.email) return
+        setSession({
+          email: payload.email,
+          firstName: payload.firstName ?? null,
+          lastName: payload.lastName ?? null,
+        })
+      } catch (error) {
+        console.error("Erreur lors du chargement de la session", error)
+      }
+    }
+    loadSession()
+    return () => {
+      active = false
+    }
+  }, [])
 
   React.useEffect(() => {
     let isMounted = true
@@ -690,13 +727,13 @@ export default function Page() {
       }
       const incoming = Array.isArray(payload?.documents) ? payload.documents : []
       const mapped = incoming.map((doc: any) =>
-        toDashboardDocument(doc, "", "Public interne")
+        toDashboardDocument(doc, "", "Public interne", uploaderName)
       )
       setDocumentsState((prev) => mergeDocumentsLists(prev, mapped))
     } catch (error) {
       console.error("Erreur lors du chargement des documents", error)
     }
-  }, [])
+  }, [uploaderName])
 
   React.useEffect(() => {
     fetchDocumentsFromApi()
@@ -818,6 +855,7 @@ export default function Page() {
     if (uploadConfidentiality) {
       formData.append("confidentiality", uploadConfidentiality)
     }
+    formData.append("uploader", uploaderName)
 
     try {
       const res = await fetch("/api/documents", {
@@ -830,7 +868,7 @@ export default function Page() {
       }
       const incoming = Array.isArray(payload?.documents) ? payload.documents : []
       const mapped = incoming.map((doc: any) =>
-        toDashboardDocument(doc, uploadCategory, uploadConfidentiality)
+        toDashboardDocument(doc, uploadCategory, uploadConfidentiality, uploaderName)
       )
 
       setDocumentsState((prev) => mergeDocumentsLists(prev, mapped))
@@ -859,7 +897,42 @@ export default function Page() {
     uploadTags,
     uploadConfidentiality,
     selectedDocId,
+    uploaderName,
   ])
+
+  const handleDeleteDocument = React.useCallback(
+    async (docId: string, docName: string) => {
+      setDeleteDocError("")
+      setDeletingDocumentId(docId)
+      try {
+        const res = await fetch("/api/documents", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: docId, name: docName }),
+        })
+        const payload = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(payload?.error || `Erreur ${res.status}`)
+        }
+
+        setDocumentsState((prev) => {
+          const next = prev.filter((doc) => doc.id !== docId)
+          if (selectedDocId === docId) {
+            setSelectedDocId(next[0]?.id ?? "")
+          }
+          return next
+        })
+      } catch (error) {
+        console.error("Erreur lors de la suppression du document", error)
+        const message =
+          error instanceof Error ? error.message : "Impossible de supprimer le document"
+        setDeleteDocError(message)
+      } finally {
+        setDeletingDocumentId("")
+      }
+    },
+    [selectedDocId]
+  )
 
   const indexView = (
     <div className="space-y-5">
@@ -1661,6 +1734,9 @@ export default function Page() {
                             <CardDescription>
                               Vue principale des fichiers indexés ou en attente
                             </CardDescription>
+                            {deleteDocError ? (
+                              <p className="text-sm text-destructive">{deleteDocError}</p>
+                            ) : null}
                           </CardHeader>
                           <CardContent className="overflow-x-auto">
                             <Table>
@@ -1689,7 +1765,11 @@ export default function Page() {
                                     <TableCell>
                                       {formatDashboardDate(doc.uploadedAt)}
                                     </TableCell>
-                                    <TableCell>{doc.uploader}</TableCell>
+                                    <TableCell>
+                                      {doc.uploader && doc.uploader !== "Dashboard"
+                                        ? doc.uploader
+                                        : uploaderName}
+                                    </TableCell>
                                     <TableCell>{doc.confidentiality}</TableCell>
                                     <TableCell>
                                       <Badge
@@ -1719,13 +1799,26 @@ export default function Page() {
                                         Voir détails
                                       </Button>
                                       <Button
+                                        asChild
                                         size="sm"
                                         className="bg-blue-100 text-blue-800 hover:bg-blue-200"
                                       >
-                                        Télécharger
+                                        <a
+                                          href={`/api/documents/${encodeURIComponent(
+                                            doc.id
+                                          )}?name=${encodeURIComponent(doc.name)}`}
+                                          download
+                                        >
+                                          Télécharger
+                                        </a>
                                       </Button>
-                                      <Button size="sm" variant="destructive">
-                                        Supprimer
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled={deletingDocumentId === doc.id}
+                                        onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                                      >
+                                        {deletingDocumentId === doc.id ? "Suppression..." : "Supprimer"}
                                       </Button>
                                     </TableCell>
                                   </TableRow>
