@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { JetBrains_Mono } from "next/font/google"
 
 import {
   Bar,
@@ -107,7 +108,22 @@ const topDocsConfig = {
   hits: { label: "Consultations", color: "#f97316" }, // orange vif
 } satisfies ChartConfig
 
-const defaultUsers = [
+type DashboardUser = {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  createdAt: string
+  active: boolean
+  admin: boolean
+}
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+})
+
+const defaultUsers: DashboardUser[] = [
   {
     id: "USR-0001",
     firstName: "Alice",
@@ -495,6 +511,19 @@ const chartColors = {
   },
 }
 
+function formatDashboardDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  const day = String(date.getDate()).padStart(2, "0")
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+
+  return `${day}/${month}/${year} - ${hours}h${minutes}`
+}
+
 export default function Page() {
   const pieGradientBase = React.useId().replace(/:/g, "")
   const pipelineGradientId = `${React.useId().replace(/:/g, "")}-pipeline`
@@ -502,18 +531,76 @@ export default function Page() {
   const topDocsGradientId = `${React.useId().replace(/:/g, "")}-docs`
   const benchmarkGradBase = React.useId().replace(/:/g, "")
   const [activeSection, setActiveSection] = React.useState("Dashboard Admin")
-  const [usersState, setUsersState] = React.useState(defaultUsers)
+  const [usersState, setUsersState] = React.useState<DashboardUser[]>([])
+  const [loadingUsers, setLoadingUsers] = React.useState(true)
+  const [usersError, setUsersError] = React.useState("")
+  const [deletingUserId, setDeletingUserId] = React.useState("")
+  const [adminUpdatingId, setAdminUpdatingId] = React.useState("")
+  const [confirmDeleteUser, setConfirmDeleteUser] = React.useState<DashboardUser | null>(null)
   const [pendingAdminToggle, setPendingAdminToggle] = React.useState<{
-    user: (typeof defaultUsers)[number]
+    user: DashboardUser
     nextIsAdmin: boolean
   } | null>(null)
   const [docsTab, setDocsTab] = React.useState("list")
   const [selectedDocId, setSelectedDocId] = React.useState(
     documents[0]?.id ?? ""
   )
+
+  React.useEffect(() => {
+    let isMounted = true
+
+    const loadUsers = async () => {
+      setLoadingUsers(true)
+      setUsersError("")
+      try {
+        const res = await fetch("/api/users")
+        if (!res.ok) {
+          throw new Error(`Erreur ${res.status}`)
+        }
+        const payload = await res.json()
+        const incoming = Array.isArray(payload?.users) ? payload.users : []
+        const normalized: DashboardUser[] = incoming.map((user) => ({
+          id: user.id || user.email,
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          email: user.email,
+          createdAt: user.createdAt ?? "",
+          admin: Boolean(user.admin),
+          active: user.active ?? true,
+        }))
+
+        if (!isMounted) return
+        setUsersState(normalized)
+      } catch (error) {
+        console.error("Erreur lors du chargement des utilisateurs", error)
+        if (!isMounted) return
+        setUsersError("Impossible de charger les utilisateurs")
+        setUsersState(defaultUsers)
+      } finally {
+        if (isMounted) setLoadingUsers(false)
+      }
+    }
+
+    loadUsers()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const thirtyDaysAgo = React.useMemo(() => {
+    const now = Date.now()
+    const days30 = 30 * 24 * 60 * 60 * 1000
+    return now - days30
+  }, [])
+
   const activeUsers = usersState.filter((u) => u.active).length
   const totalUsers = usersState.length
   const adminUsers = usersState.filter((u) => u.admin).length
+  const recentUsers = usersState.filter((u) => {
+    const created = new Date(u.createdAt).getTime()
+    return !Number.isNaN(created) && created >= thirtyDaysAgo
+  }).length
   const selectedDoc = documents.find((doc) => doc.id === selectedDocId)
   const indexedDocs = documents.filter((d) => d.status === "Indexé").length
   const inProgressDocs = documents.filter((d) => d.status === "En cours").length
@@ -534,15 +621,64 @@ export default function Page() {
     [usersState]
   )
 
-  const confirmAdminToggle = React.useCallback(() => {
+  const confirmAdminToggle = React.useCallback(async () => {
     if (!pendingAdminToggle) return
-    applyAdminToggle(pendingAdminToggle.user.id, pendingAdminToggle.nextIsAdmin)
-    setPendingAdminToggle(null)
+    setUsersError("")
+    setAdminUpdatingId(pendingAdminToggle.user.id)
+    try {
+      const res = await fetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: pendingAdminToggle.user.id,
+          admin: pendingAdminToggle.nextIsAdmin,
+        }),
+      })
+      if (!res.ok) {
+        throw new Error(`Erreur ${res.status}`)
+      }
+      applyAdminToggle(pendingAdminToggle.user.id, pendingAdminToggle.nextIsAdmin)
+      setPendingAdminToggle(null)
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du rôle admin", error)
+      setUsersError("Impossible de mettre à jour le rôle")
+    } finally {
+      setAdminUpdatingId("")
+    }
   }, [pendingAdminToggle, applyAdminToggle])
 
   const cancelAdminToggle = React.useCallback(() => {
     setPendingAdminToggle(null)
   }, [])
+
+  const requestDeleteUser = React.useCallback((user: DashboardUser) => {
+    setConfirmDeleteUser(user)
+  }, [])
+
+  const handleDeleteUser = React.useCallback(async () => {
+    if (!confirmDeleteUser) return
+    setUsersError("")
+    setDeletingUserId(confirmDeleteUser.id)
+    try {
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: confirmDeleteUser.id }),
+      })
+
+      if (!res.ok) {
+        throw new Error(`Erreur ${res.status}`)
+      }
+
+      setUsersState((prev) => prev.filter((user) => user.id !== confirmDeleteUser.id))
+      setConfirmDeleteUser(null)
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'utilisateur", error)
+      setUsersError("Impossible de supprimer l'utilisateur")
+    } finally {
+      setDeletingUserId("")
+    }
+  }, [confirmDeleteUser])
 
   const indexView = (
     <div className="space-y-5">
@@ -1089,25 +1225,26 @@ export default function Page() {
   )
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar
-        variant="inset"
-        onNavSelect={setActiveSection}
-        activeItem={activeSection}
-      />
-      <SidebarInset>
-        <SiteHeader title={activeSection} />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {activeSection === "Utilisateurs" ? (
+    <>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar
+          variant="inset"
+          onNavSelect={setActiveSection}
+          activeItem={activeSection}
+        />
+        <SidebarInset>
+          <SiteHeader title={activeSection} />
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                {activeSection === "Utilisateurs" ? (
                 <>
                   <div className="px-4 lg:px-6 grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
                     <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
@@ -1120,7 +1257,7 @@ export default function Page() {
                     </Card>
                     <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                       <CardHeader>
-                        <CardDescription>Utilisateurs actifs</CardDescription>
+                        <CardDescription>Utilisateurs actifs (30 jours)</CardDescription>
                         <CardTitle className="text-2xl font-semibold tabular-nums">
                           {activeUsers}
                         </CardTitle>
@@ -1130,7 +1267,7 @@ export default function Page() {
                       <CardHeader>
                         <CardDescription>Nouveaux (30 jours)</CardDescription>
                         <CardTitle className="text-2xl font-semibold tabular-nums">
-                          8
+                          {recentUsers}
                         </CardTitle>
                       </CardHeader>
                     </Card>
@@ -1138,7 +1275,10 @@ export default function Page() {
                       <CardHeader>
                         <CardDescription>Taux d’activité</CardDescription>
                         <CardTitle className="text-2xl font-semibold tabular-nums">
-                          {Math.round((activeUsers / totalUsers) * 100)}%
+                          {totalUsers === 0
+                            ? 0
+                            : Math.round((activeUsers / totalUsers) * 100)}
+                          %
                         </CardTitle>
                       </CardHeader>
                     </Card>
@@ -1148,6 +1288,11 @@ export default function Page() {
                       <CardHeader>
                         <CardTitle>Liste des utilisateurs</CardTitle>
                         <CardDescription>Nom, email, date de création, ID</CardDescription>
+                        {usersError && (
+                          <p className="text-sm text-destructive">
+                            {usersError}
+                          </p>
+                        )}
                       </CardHeader>
                       <CardContent className="overflow-x-auto">
                         <Table>
@@ -1157,19 +1302,46 @@ export default function Page() {
                               <TableHead>Email</TableHead>
                               <TableHead>Date de création</TableHead>
                               <TableHead>ID</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {usersState.map((user) => (
-                              <TableRow key={user.id}>
-                                <TableCell className="font-medium">
-                                  {user.firstName} {user.lastName}
-                                </TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>{user.createdAt}</TableCell>
-                                <TableCell>{user.id}</TableCell>
+                            {loadingUsers ? (
+                              <TableRow>
+                                <TableCell colSpan={5}>Chargement des utilisateurs…</TableCell>
                               </TableRow>
-                            ))}
+                            ) : usersState.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={5}>Aucun utilisateur trouvé</TableCell>
+                              </TableRow>
+                            ) : (
+                              usersState.map((user) => (
+                                <TableRow key={user.id}>
+                                  <TableCell className={`font-medium ${jetBrainsMono.className}`}>
+                                    {user.firstName} {user.lastName}
+                                  </TableCell>
+                                  <TableCell className={jetBrainsMono.className}>
+                                    {user.email}
+                                  </TableCell>
+                                  <TableCell className={jetBrainsMono.className}>
+                                    {formatDashboardDate(user.createdAt)}
+                                  </TableCell>
+                                  <TableCell className={jetBrainsMono.className}>{user.id}</TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-destructive border-destructive/50 hover:bg-red-50"
+                                      onClick={() => requestDeleteUser(user)}
+                                      disabled={deletingUserId === user.id}
+                                      aria-label={`Supprimer ${user.firstName} ${user.lastName}`}
+                                    >
+                                      Supprimer
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
                           </TableBody>
                         </Table>
                       </CardContent>
@@ -1240,6 +1412,7 @@ export default function Page() {
                                     <Checkbox
                                       checked={user.admin}
                                       onCheckedChange={() => requestAdminToggle(user.id)}
+                                      disabled={adminUpdatingId === user.id}
                                       aria-label={`Toggle admin for ${user.firstName} ${user.lastName}`}
                                     />
                                     <span className="text-sm text-muted-foreground">
@@ -2033,6 +2206,38 @@ export default function Page() {
           </div>
         </div>
       </SidebarInset>
+      {confirmDeleteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <Card className="w-full max-w-md shadow-lg border border-primary/20">
+            <CardHeader>
+              <CardTitle>Supprimer l’utilisateur ?</CardTitle>
+              <CardDescription>
+                {confirmDeleteUser.firstName} {confirmDeleteUser.lastName} (
+                {confirmDeleteUser.email})
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>Cette action est irréversible et retirera l’accès à l’espace.</p>
+            </CardContent>
+            <CardContent className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmDeleteUser(null)}
+                disabled={deletingUserId === confirmDeleteUser.id}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteUser}
+                disabled={deletingUserId === confirmDeleteUser.id}
+              >
+                {deletingUserId === confirmDeleteUser.id ? "Suppression..." : "Supprimer"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {pendingAdminToggle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <Card className="w-full max-w-md shadow-lg border border-primary/20">
@@ -2051,13 +2256,23 @@ export default function Page() {
               <Button variant="outline" onClick={cancelAdminToggle}>
                 Annuler
               </Button>
-              <Button variant="default" onClick={confirmAdminToggle}>
-                Confirmer
+              <Button
+                variant="default"
+                onClick={confirmAdminToggle}
+                disabled={
+                  !!pendingAdminToggle &&
+                  adminUpdatingId === pendingAdminToggle.user.id
+                }
+              >
+                {!!pendingAdminToggle && adminUpdatingId === pendingAdminToggle.user.id
+                  ? "Mise à jour…"
+                  : "Confirmer"}
               </Button>
             </CardContent>
           </Card>
         </div>
       )}
     </SidebarProvider>
+    </>
   )
 }

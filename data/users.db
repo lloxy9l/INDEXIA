@@ -3,7 +3,7 @@
     "id": "09131b39-b792-40b7-a37a-64193daf51de",
     "email": "renand.baptiste@icloud.com",
     "passwordHash": "c413759ad6b202a234c2cfb284a23ba3f8b2d28e82b4277648eee3e6a9866399",
-    "createdAt": "2025-11-26T12:45:07.829Z",
+    "createdAt": "2025-08-26T12:45:07.829Z",
     "admin": true,
     "firstName": "Baptiste",
     "lastName": "Renand"
@@ -13,7 +13,7 @@
     "email": "soldan.maxens@gmail.com",
     "passwordHash": "b9c950640e1b3740e98acb93e669c65766f6670dd1609ba91ff41052ba48c6f3",
     "createdAt": "2025-11-26T14:12:38.717Z",
-    "admin": false,
+    "admin": true,
     "firstName": "Maxens",
     "lastName": "Soldan"
   }
