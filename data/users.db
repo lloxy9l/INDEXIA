@@ -7,5 +7,14 @@
     "admin": true,
     "firstName": "Baptiste",
     "lastName": "Renand"
+  },
+  {
+    "id": "8d6eb64f-3f9f-475a-9590-d1859e5520b5",
+    "email": "soldan.maxens@gmail.com",
+    "passwordHash": "b9c950640e1b3740e98acb93e669c65766f6670dd1609ba91ff41052ba48c6f3",
+    "createdAt": "2025-11-26T14:12:38.717Z",
+    "admin": false,
+    "firstName": "Maxens",
+    "lastName": "Soldan"
   }
 ]
