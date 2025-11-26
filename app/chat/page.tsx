@@ -21,6 +21,9 @@ export default function ChatPage() {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState("")
   const [isListening, setIsListening] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<
+    { name: string; size: number }[]
+  >([])
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -52,17 +55,17 @@ export default function ChatPage() {
     }
     const recognition: SpeechRecognition = new SpeechRecognition()
     recognition.lang = "fr-FR"
-    recognition.continuous = false
-    recognition.interimResults = true
+    recognition.continuous = true
+    recognition.interimResults = false
 
     recognition.onstart = () => setIsListening(true)
     recognition.onend = () => setIsListening(false)
     recognition.onerror = () => setIsListening(false)
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = ""
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript
-      }
+      const result = event.results[event.resultIndex]
+      if (!result?.isFinal) return
+      const transcript = result[0].transcript.trim()
+      if (!transcript) return
       setMessage((prev) => {
         const base = prev.trim()
         return base ? `${base} ${transcript}` : transcript
@@ -80,6 +83,15 @@ export default function ChatPage() {
     fileInputRef.current?.click()
   }
 
+  const handleFilesSelected = (files: FileList | null) => {
+    if (!files) return
+    const mapped = Array.from(files).map((f) => ({
+      name: f.name,
+      size: f.size,
+    }))
+    setUploadedFiles((prev) => [...prev, ...mapped].slice(0, 3))
+  }
+
   const handleVoiceClick = () => {
     const recognition = recognitionRef.current
     if (!recognition) {
@@ -91,6 +103,24 @@ export default function ChatPage() {
     } else {
       recognition.start()
     }
+  }
+
+  const getFileIcon = (filename: string) => {
+    const ext = filename.split(".").pop()?.toLowerCase()
+    const isImage = ext && ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)
+    const isPdf = ext === "pdf"
+    const isDoc = ext && ["doc", "docx", "txt", "rtf", "odt", "md"].includes(ext)
+    const isZip = ext && ["zip", "rar", "7z", "tar", "gz"].includes(ext)
+    const isAudio = ext && ["mp3", "wav", "ogg", "flac", "m4a"].includes(ext)
+    const isVideo = ext && ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)
+
+    if (isImage) return <IconImage className="h-4 w-4" />
+    if (isPdf) return <IconPdf className="h-4 w-4" />
+    if (isDoc) return <IconDoc className="h-4 w-4" />
+    if (isZip) return <IconZip className="h-4 w-4" />
+    if (isAudio) return <IconAudio className="h-4 w-4" />
+    if (isVideo) return <IconVideo className="h-4 w-4" />
+    return <IconFile className="h-4 w-4" />
   }
 
   return (
@@ -146,6 +176,32 @@ export default function ChatPage() {
               className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
             />
 
+            {uploadedFiles.length > 0 && (
+              <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 mb-3">
+                <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
+                  {getFileIcon(uploadedFiles[0].name)}
+                  {uploadedFiles.length === 1
+                    ? uploadedFiles[0].name
+                    : `${uploadedFiles.length} fichiers`}
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {uploadedFiles.slice(0, 3).map((file) => (
+                    <span
+                      key={file.name}
+                      className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
+                    >
+                      {getFileIcon(file.name)}
+                      <span>{file.name}</span>
+                    </span>
+                  ))}
+                  {uploadedFiles.length > 3 && (
+                    <span className="rounded-full bg-background px-2 py-1 shadow-sm">
+                      +{uploadedFiles.length - 3} autres
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <input
@@ -153,26 +209,25 @@ export default function ChatPage() {
                   type="file"
                   className="hidden"
                   multiple
-                  onChange={(e) => {
-                    // Placeholder: handle selected files here if needed.
-                    console.log("Files selected:", e.target.files)
-                  }}
+                  onChange={(e) => handleFilesSelected(e.target.files)}
                 />
                 <button
                   type="button"
                   onClick={handleFileClick}
-                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent transition cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md bg-transparent transition cursor-pointer"
                   aria-label="Joindre un fichier"
                 >
                   <IconPaperclip className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent transition cursor-pointer"
+                  className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
+                    isListening ? "bg-black text-white border-black" : "bg-transparent"
+                  }`}
                   aria-label="Dicter un message"
                   onClick={handleVoiceClick}
                 >
-                  <IconMic className={`h-5 w-5 ${isListening ? "text-primary" : ""}`} />
+                  <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
                 </button>
               </div>
               <div className="relative flex items-center">
@@ -230,7 +285,7 @@ export default function ChatPage() {
               </div>
               <Button
                 size="icon"
-                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer"
+                className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl"
               >
                 <IconArrowUp className="h-10 w-10" />
               </Button>
@@ -335,6 +390,151 @@ function IconMic(props: React.SVGProps<SVGSVGElement>) {
       <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
       <path d="M19 10v1a7 7 0 1 1-14 0v-1" />
       <line x1="12" x2="12" y1="19" y2="22" />
+    </svg>
+  )
+}
+
+function IconFile(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  )
+}
+
+function IconImage(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-4-4a2 2 0 0 0-3 0l-5 5" />
+    </svg>
+  )
+}
+
+function IconPdf(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 13h1c.6 0 1 .4 1 1v1c0 .6-.4 1-1 1H9z" />
+      <path d="M13 13h1.5c.8 0 1.5.7 1.5 1.5S15.3 16 14.5 16H13z" />
+      <path d="M17 16v-3h1" />
+    </svg>
+  )
+}
+
+function IconDoc(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h1.5a1.5 1.5 0 0 1 0 3H8z" />
+      <path d="M13.5 13h1a1.5 1.5 0 0 1 0 3h-1z" />
+      <path d="M18 16v-3" />
+    </svg>
+  )
+}
+
+function IconZip(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 7h1" />
+      <path d="M9 11h1" />
+      <path d="M9 15h1" />
+      <path d="M9 19h1" />
+    </svg>
+  )
+}
+
+function IconAudio(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  )
+}
+
+function IconVideo(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="2" y="7" width="14" height="10" rx="2" ry="2" />
+      <path d="m16 9 4-2v10l-4-2" />
     </svg>
   )
 }
