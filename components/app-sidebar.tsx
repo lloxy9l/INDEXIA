@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
   IconCamera,
   IconChartBar,
@@ -32,6 +33,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+
+const logoSrc = "/logo.png"
 
 const data = {
   user: {
@@ -153,16 +156,22 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="mb-4 pt-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+              <a href="#" className="block" style={{ lineHeight: 0 }}>
+                <Image
+                  src={logoSrc}
+                  alt="Logo"
+                  width={140}
+                  height={140}
+                  priority
+                  unoptimized
+                />
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
