@@ -46,7 +46,7 @@ export function SignupForm({
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (password !== confirm) {
-      setStatus({ type: "error", message: "Les mots de passe ne correspondent pas." })
+      setStatus({ type: "error", message: "Les mots de passe ne correspondent pas" })
       return
     }
 
@@ -69,13 +69,13 @@ export function SignupForm({
 
       setStatus({
         type: "success",
-        message: payload?.message ?? "Compte créé avec succès.",
+        message: payload?.message ?? "Compte créé avec succès",
       })
       setEmail("")
       setPassword("")
       setConfirm("")
     } catch (error) {
-      setStatus({ type: "error", message: "Impossible de créer le compte." })
+      setStatus({ type: "error", message: "Impossible de créer le compte" })
     } finally {
       setIsLoading(false)
     }
@@ -83,21 +83,6 @@ export function SignupForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div
-        className={cn(
-          "pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-4 py-3 text-sm shadow-lg transition-all duration-300 ease-out",
-          status.type
-            ? "opacity-100 translate-y-0 scale-100"
-            : "opacity-0 translate-y-2 scale-95",
-          status.type === "error"
-            ? "bg-destructive text-white"
-            : status.type === "success"
-              ? "bg-emerald-600 text-white"
-              : "bg-transparent text-transparent shadow-none"
-        )}
-      >
-        {status.message}
-      </div>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={onSubmit}>
@@ -153,8 +138,27 @@ export function SignupForm({
                 </FieldDescription>
               </Field>
               <Field>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Création du compte..." : "Créer un compte"}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  variant={
+                    status.type === "error"
+                      ? "destructive"
+                      : status.type === "success"
+                        ? "secondary"
+                        : "default"
+                  }
+                  className={cn(
+                    status.type === "success"
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : ""
+                  )}
+                >
+                  {status.type
+                    ? status.message
+                    : isLoading
+                      ? "Création du compte..."
+                      : "Créer un compte"}
                 </Button>
               </Field>
               <FieldDescription className="text-center">

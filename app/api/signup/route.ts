@@ -55,14 +55,14 @@ export async function POST(request: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email et mot de passe requis." },
+        { error: "Email et mot de passe requis" },
         { status: 400 }
       )
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 8 caractères." },
+        { error: "Le mot de passe doit contenir au moins 8 caractères" },
         { status: 400 }
       )
     }
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     if (existing) {
       return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email." },
+        { error: "Un compte existe déjà avec cet email" },
         { status: 409 }
       )
     }
@@ -86,11 +86,11 @@ export async function POST(request: Request) {
     users.push(newUser)
     await writeUsers(users)
 
-    return authResponse({ message: "Compte créé avec succès.", email }, 201, email)
+    return authResponse({ message: "Compte créé avec succès", email }, 201, email)
   } catch (error) {
     console.error("Signup error", error)
     return NextResponse.json(
-      { error: "Erreur lors de la création du compte." },
+      { error: "Erreur lors de la création du compte" },
       { status: 500 }
     )
   }
