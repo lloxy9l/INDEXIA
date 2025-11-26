@@ -1508,8 +1508,8 @@ export default function ChatPage() {
         <SiteHeader title={headerTitle} />
         <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
           <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
-            <Card className="w-[960px] max-w-full flex-1 rounded-3xl border border-border/70 bg-white shadow-sm">
-              <CardContent className="flex h-full flex-col gap-4 px-6 py-4">
+            <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none">
+              <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
                 <div className="flex-1 overflow-y-auto">
                   {chatHistory.length === 0 ? (
                     <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
@@ -1525,7 +1525,7 @@ export default function ChatPage() {
                           }`}
                         >
                           <div
-                            className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                            className={`max-w-[95%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
                               entry.role === "assistant"
                                 ? "bg-muted text-foreground"
                                 : "bg-black text-white"
@@ -1540,7 +1540,7 @@ export default function ChatPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="absolute bottom-5 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur">
+            <Card className="absolute bottom-0 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur">
               <CardContent className="flex flex-col gap-3 px-6 py-3">
                 <textarea
                   rows={1}
@@ -1555,7 +1555,7 @@ export default function ChatPage() {
                     }
                   }}
                   placeholder="Demandez, cherchez ou faites ce que vous voulez..."
-                  className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px]"
+                  className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-md leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[200px]"
                 />
                 <div className="flex items-center gap-3">
                   <input
