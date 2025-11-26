@@ -3,11 +3,13 @@
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default function ChatPage() {
+  const router = useRouter()
   const logoSrc = "/logo.png"
   const models = [
     { value: "gpt-4o-mini", label: "GPT 4o-mini", icon: "/icon-chatgpt.jpg" },
@@ -27,6 +29,7 @@ export default function ChatPage() {
   const [fileNotice, setFileNotice] = useState("")
   const [selectedChatId, setSelectedChatId] = useState("chat-1")
   const [showSettings, setShowSettings] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -129,6 +132,39 @@ export default function ChatPage() {
     }
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" })
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion", error)
+    } finally {
+      router.push("/login")
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+    const checkSession = async () => {
+      try {
+        const res = await fetch("/api/session")
+        if (!active) return
+        if (!res.ok) {
+          router.replace("/login")
+          return
+        }
+        setCheckingAuth(false)
+      } catch (error) {
+        console.error("Erreur lors du contrôle de session", error)
+        if (!active) return
+        router.replace("/login")
+      }
+    }
+    checkSession()
+    return () => {
+      active = false
+    }
+  }, [router])
+
   const getFileIcon = (filename: string) => {
     const ext = filename.split(".").pop()?.toLowerCase()
     const isImage = ext && ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)
@@ -145,6 +181,14 @@ export default function ChatPage() {
     if (isAudio) return <IconAudio className="h-4 w-4" />
     if (isVideo) return <IconVideo className="h-4 w-4" />
     return <IconFile className="h-4 w-4" />
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="bg-muted text-foreground flex min-h-svh items-center justify-center">
+        <span className="text-sm text-muted-foreground">Vérification de session...</span>
+      </div>
+    )
   }
 
   return (
@@ -219,7 +263,10 @@ export default function ChatPage() {
             <IconSettings className="h-4 w-4" />
             Paramètres
           </button>
-          <button className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+          <button
+            className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+            onClick={handleLogout}
+          >
             <IconLogout className="h-4 w-4" />
             Déconnexion
           </button>

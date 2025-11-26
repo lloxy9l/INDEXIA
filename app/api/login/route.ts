@@ -1,38 +1,16 @@
-import { createHash } from "crypto"
-import { promises as fs } from "fs"
-import path from "path"
-
 import { NextResponse } from "next/server"
 
-type UserRecord = {
-  email: string
-  passwordHash: string
-  createdAt: string
-}
-
-const DB_PATH = path.join(process.cwd(), "data", "auth.db")
-const AUTH_COOKIE_NAME = "auth_state"
-
-async function readUsers(): Promise<UserRecord[]> {
-  try {
-    const raw = await fs.readFile(DB_PATH, "utf8")
-    if (!raw.trim()) return []
-    return JSON.parse(raw) as UserRecord[]
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return []
-    }
-    throw error
-  }
-}
-
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex")
-}
+import {
+  AUTH_COOKIE_NAME,
+  createAuthCookieValue,
+  hashPassword,
+  readUsers,
+} from "@/lib/auth"
 
 function authResponse(body: unknown, status: number, email: string) {
+  const cookieValue = createAuthCookieValue(email)
   const response = NextResponse.json(body, { status })
-  response.cookies.set(AUTH_COOKIE_NAME, JSON.stringify({ email, loggedIn: true }), {
+  response.cookies.set(AUTH_COOKIE_NAME, JSON.stringify(cookieValue), {
     httpOnly: true,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 jours
