@@ -25,6 +25,8 @@ export default function ChatPage() {
     { name: string; size: number }[]
   >([])
   const [fileNotice, setFileNotice] = useState("")
+  const [selectedChatId, setSelectedChatId] = useState("chat-1")
+  const [showSettings, setShowSettings] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -188,18 +190,32 @@ export default function ChatPage() {
           Vos derniers chats
         </div>
         <div className="flex flex-col gap-2">
-          <button className="flex items-center gap-2 rounded-xl  px-3 py-2 text-sm font-medium bg-[#ededed] transition cursor-pointer">
-            <IconChat className="h-4 w-4" />
-            Essai 1
-          </button>
-          <button className="text-muted-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
-            <IconChat className="h-4 w-4" />
-            Essai 2
-          </button>
+          {[{ id: "chat-1", label: "Essai 1" }, { id: "chat-2", label: "Essai 2" }].map(
+            (chat) => {
+              const isActive = chat.id === selectedChatId
+              return (
+                <button
+                  key={chat.id}
+                  onClick={() => setSelectedChatId(chat.id)}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer ${
+                    isActive
+                      ? "bg-[#ededed] font-semibold text-foreground border border-border"
+                      : " text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  <IconChat className="h-4 w-4" />
+                  {chat.label}
+                </button>
+              )
+            }
+          )}
         </div>
 
         <div className="mt-auto flex flex-col gap-2">
-          <button className="text-muted-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer">
+          <button
+            className="text-muted-foreground hover:bg-background flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+            onClick={() => setShowSettings(true)}
+          >
             <IconSettings className="h-4 w-4" />
             Paramètres
           </button>
@@ -371,7 +387,101 @@ export default function ChatPage() {
             </div>
           </CardContent>
         </Card>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
+          {[
+            {
+              icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
+              label: "Analyse data",
+              bg: "bg-cyan-50",
+              text: "text-cyan-900",
+              border: "border-cyan-200",
+            },
+            {
+              icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
+              label: "Résumer texte",
+              bg: "bg-amber-50",
+              text: "text-amber-900",
+              border: "border-amber-200",
+            },
+            {
+              icon: <IconShield className="h-4 w-4 text-emerald-700" />,
+              label: "Vérifier droits",
+              bg: "bg-emerald-50",
+              text: "text-emerald-900",
+              border: "border-emerald-200",
+            },
+            {
+              icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
+              label: "Comparer pipelines",
+              bg: "bg-indigo-50",
+              text: "text-indigo-900",
+              border: "border-indigo-200",
+            },
+            {
+              icon: <IconChart className="h-4 w-4 text-rose-700" />,
+              label: "Benchmark",
+              bg: "bg-rose-50",
+              text: "text-rose-900",
+              border: "border-rose-200",
+            },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
+      {showSettings && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-8">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          />
+          <Card className="relative z-10 w-full max-w-3xl rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/70 px-6 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Préférences
+                </p>
+                <h2 className="text-xl font-semibold">Paramètres du compte</h2>
+              </div>
+              <Button
+                variant="outline"
+                className="rounded-full px-4 py-2 cursor-pointer"
+                onClick={() => setShowSettings(false)}
+              >
+                Fermer
+              </Button>
+            </div>
+            <div className="grid gap-4 px-6 py-6 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <SettingsSection title="Profil">
+                  <SettingsRow label="Nom complet" value="Maxens Soldan" action="Modifier" />
+                  <SettingsRow label="Email" value="maxens@example.com" action="Changer" />
+                  <SettingsRow label="Mot de passe" value="••••••••" action="Mettre à jour" />
+                </SettingsSection>
+                <SettingsSection title="Données & confidentialité">
+                  <SettingsRow label="Export données" value="Disponible" action="Exporter" />
+                  <SettingsRow label="Suppression compte" action="Supprimer" danger />
+                </SettingsSection>
+              </div>
+              <div className="flex flex-col gap-4">
+                <SettingsSection title="Sécurité & accès">
+                  <SettingsRow label="2FA" value="Désactivé" action="Activer" />
+                  <SettingsRow label="Clés API" value="2 clés actives" action="Gérer" />
+                  <SettingsRow label="Sessions" value="4 sessions ouvertes" action="Révoquer" />
+                  <SettingsRow label="Rôle" value="Admin" />
+                </SettingsSection>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
@@ -730,5 +840,148 @@ function IconLogout(props: React.SVGProps<SVGSVGElement>) {
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" x2="9" y1="12" y2="12" />
     </svg>
+  )
+}
+
+function IconDatabase(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+      <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+    </svg>
+  )
+}
+
+function IconSparkle(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="m12 3-1.5 5h3L12 3Z" />
+      <path d="m5 13-2 7 7-2-7-2 2-7 7 2" />
+      <path d="m19 11-1 4 4 1-4 1-1 4-1-4-4-1 4-1 1-4Z" />
+    </svg>
+  )
+}
+
+function IconShield(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+      <path d="M8 11c1.5 1.5 3 3 4 5 1-2 2.5-3.5 4-5" />
+    </svg>
+  )
+}
+
+function IconFlow(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <path d="M10 7h4" />
+      <path d="m10 17 4-3v-4" />
+    </svg>
+  )
+}
+
+function IconChart(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M3 3v18h18" />
+      <rect x="7" y="8" width="3" height="7" rx="1" />
+      <rect x="12" y="6" width="3" height="9" rx="1" />
+      <rect x="17" y="10" width="3" height="5" rx="1" />
+    </svg>
+  )
+}
+
+type SettingsRowProps = {
+  label: string
+  value?: string
+  action?: string
+  danger?: boolean
+}
+
+function SettingsSection({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 shadow-sm">
+      <div className="mb-3 text-sm font-semibold text-muted-foreground">{title}</div>
+      <div className="flex flex-col gap-3">{children}</div>
+    </div>
+  )
+}
+
+function SettingsRow({ label, value, action, danger }: SettingsRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
+      <div>
+        <div className="text-sm font-medium">{label}</div>
+        {value ? <div className="text-xs text-muted-foreground">{value}</div> : null}
+      </div>
+      {action ? (
+        <Button
+          variant={danger ? "destructive" : "outline"}
+          className="h-8 rounded-full px-3 text-xs cursor-pointer"
+        >
+          {action}
+        </Button>
+      ) : null}
+    </div>
   )
 }
