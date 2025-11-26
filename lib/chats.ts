@@ -5,6 +5,7 @@ import path from "path"
 export type ChatRecord = {
   id: string
   userId: string
+  projectId: string | null
   title: string
   createdAt: string
   updatedAt: string
@@ -16,7 +17,15 @@ export async function readChats(): Promise<ChatRecord[]> {
   try {
     const raw = await fs.readFile(CHAT_DB_PATH, "utf8")
     if (!raw.trim()) return []
-    return JSON.parse(raw) as ChatRecord[]
+    const parsed = JSON.parse(raw) as ChatRecord[]
+    return parsed.map((chat) => ({
+      ...chat,
+      projectId:
+        typeof (chat as ChatRecord).projectId === "string" &&
+        (chat as ChatRecord).projectId?.trim().length
+          ? (chat as ChatRecord).projectId
+          : null,
+    }))
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return []
@@ -31,11 +40,16 @@ export async function writeChats(chats: ChatRecord[]) {
   await fs.writeFile(CHAT_DB_PATH, serialized, "utf8")
 }
 
-export function createChatForUser(userId: string, title?: string): ChatRecord {
+export function createChatForUser(
+  userId: string,
+  title?: string,
+  projectId?: string | null
+): ChatRecord {
   const now = new Date().toISOString()
   return {
     id: randomUUID(),
     userId,
+    projectId: projectId ?? null,
     title: title?.trim() || "Nouveau chat",
     createdAt: now,
     updatedAt: now,
@@ -48,6 +62,14 @@ export function sortChatsByRecent(chats: ChatRecord[]) {
   )
 }
 
-export function chatsForUser(chats: ChatRecord[], userId: string) {
-  return chats.filter((chat) => chat.userId === userId)
+export function chatsForUser(
+  chats: ChatRecord[],
+  userId: string,
+  projectId?: string | null
+) {
+  return chats.filter((chat) => {
+    if (chat.userId !== userId) return false
+    if (!projectId) return true
+    return chat.projectId === projectId
+  })
 }

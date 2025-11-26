@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 import type { ChatRecord } from "@/lib/chats"
+import type { ProjectRecord } from "@/lib/projects"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -48,11 +49,26 @@ export default function ChatPage() {
     { name: string; size: number }[]
   >([])
   const [fileNotice, setFileNotice] = useState("")
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
+  const [projects, setProjects] = useState<ProjectRecord[]>([])
   const [chats, setChats] = useState<ChatRecord[]>([])
   const [loadingChats, setLoadingChats] = useState(false)
   const [chatError, setChatError] = useState("")
+  const [projectError, setProjectError] = useState("")
+  const [projectNameInput, setProjectNameInput] = useState("")
+  const [showProjectModal, setShowProjectModal] = useState(false)
   const [isCreatingChat, setIsCreatingChat] = useState(false)
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null)
+  const [renamingChatId, setRenamingChatId] = useState<string | null>(null)
+  const [movingChatId, setMovingChatId] = useState<string | null>(null)
+  const [actionMenuChatId, setActionMenuChatId] = useState<string | null>(null)
+  const [projectPickerChatId, setProjectPickerChatId] = useState<string | null>(null)
+  const [chatTitleInput, setChatTitleInput] = useState("")
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
+  const [projectRenameInput, setProjectRenameInput] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [showSettings, setShowSettings] = useState(false)
   const [session, setSession] = useState<{
@@ -93,7 +109,8 @@ export default function ChatPage() {
     setIsCreatingChat(true)
     setChatError("")
 
-    const fallbackTitle = `Nouveau chat ${chats.length + 1}`
+    const unassignedCount = chats.filter((chat) => !chat.projectId).length
+    const fallbackTitle = `Nouveau chat ${unassignedCount + 1}`
 
     try {
       const res = await fetch("/api/chats", {
@@ -121,6 +138,13 @@ export default function ChatPage() {
             (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
           )
         })
+        setProjects((prev) =>
+          prev.map((project) =>
+            project.id === selectedProjectId
+              ? { ...project, updatedAt: created.updatedAt }
+              : project
+          )
+        )
         setSelectedChatId(created.id)
       }
     } catch (error) {
@@ -133,8 +157,308 @@ export default function ChatPage() {
     }
   }
 
-  const handleNewProject = () => {
-    console.log("Créer un nouveau projet")
+  const openProjectModal = () => {
+    setProjectError("")
+    setProjectNameInput(`Projet ${projects.length + 1}`)
+    setShowProjectModal(true)
+  }
+
+  const handleNewProject = async () => {
+    if (isCreatingProject) return
+    setProjectError("")
+
+    const name = projectNameInput.trim()
+    if (!name) {
+      setProjectError("Le nom du projet est requis")
+      return
+    }
+
+    setIsCreatingProject(true)
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de créer le projet")
+      }
+
+      const created = payload?.project as ProjectRecord | undefined
+      if (created) {
+        setProjects((prev) =>
+          [...prev.filter((p) => p.id !== created.id), created].sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+        )
+        setSelectedProjectId(created.id)
+        setSelectedChatId(null)
+        setShowProjectModal(false)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du projet", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de créer un projet"
+      setProjectError(message)
+    } finally {
+      setIsCreatingProject(false)
+    }
+  }
+
+  const startRenameProject = (project: ProjectRecord) => {
+    setRenamingProjectId(project.id)
+    setProjectRenameInput(project.name)
+    setProjectError("")
+  }
+
+  const cancelRenameProject = () => {
+    setRenamingProjectId(null)
+    setProjectRenameInput("")
+  }
+
+  const handleRenameProject = async () => {
+    if (!renamingProjectId) return
+    const nextName = projectRenameInput.trim()
+    if (!nextName) {
+      setProjectError("Le nom du projet est requis")
+      return
+    }
+    setProjectError("")
+    try {
+      const res = await fetch("/api/projects", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: renamingProjectId, name: nextName }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de renommer le projet")
+      }
+
+      const updated = payload?.project as ProjectRecord | undefined
+      if (updated) {
+        setProjects((prev) =>
+          prev
+            .map((p) => (p.id === updated.id ? updated : p))
+            .sort(
+              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            )
+        )
+        setSelectedProjectId(updated.id)
+      }
+    } catch (error) {
+      console.error("Erreur lors du renommage du projet", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de renommer le projet"
+      setProjectError(message)
+    } finally {
+      cancelRenameProject()
+    }
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (deletingProjectId) return
+    setProjectError("")
+    setDeletingProjectId(projectId)
+    try {
+      const res = await fetch("/api/projects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de supprimer le projet")
+      }
+
+      const nextProjects = Array.isArray(payload?.projects) ? payload.projects : []
+      const nextChats = Array.isArray(payload?.chats) ? payload.chats : []
+      setProjects(nextProjects)
+      setChats(nextChats)
+      const resolvedProjectId = nextProjects.some(
+        (p: ProjectRecord) => p.id === selectedProjectId
+      )
+        ? selectedProjectId
+        : null
+      setSelectedProjectId(resolvedProjectId)
+      const unassignedAfterDelete = nextChats.filter(
+        (chat: ChatRecord) => !chat.projectId
+      )
+      const projectChats = resolvedProjectId
+        ? nextChats.filter((chat: ChatRecord) => chat.projectId === resolvedProjectId)
+        : unassignedAfterDelete
+      setSelectedChatId(projectChats[0]?.id ?? unassignedAfterDelete[0]?.id ?? null)
+    } catch (error) {
+      console.error("Erreur lors de la suppression du projet", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de supprimer le projet"
+      setProjectError(message)
+    } finally {
+      setDeletingProjectId(null)
+    }
+  }
+
+  const handleDeleteChat = async (chatId: string) => {
+    if (deletingChatId) return
+    setChatError("")
+    setDeletingChatId(chatId)
+    try {
+      const res = await fetch("/api/chats", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de supprimer le chat")
+      }
+
+      setChats((prev) => {
+        const next = prev.filter((chat) => chat.id !== chatId)
+        if (selectedChatId === chatId) {
+          const projectChats = next.filter((chat) => chat.projectId === selectedProjectId)
+          setSelectedChatId(projectChats[0]?.id ?? null)
+        }
+        return next
+      })
+    } catch (error) {
+      console.error("Erreur lors de la suppression du chat", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de supprimer le chat"
+      setChatError(message)
+    } finally {
+      setDeletingChatId(null)
+    }
+  }
+
+  const handleMoveChat = async (chatId: string, projectId: string | null) => {
+    if (movingChatId) return
+    setChatError("")
+    const targetValue = projectId || null
+    setMovingChatId(chatId)
+    setActionMenuChatId(null)
+    try {
+      const res = await fetch("/api/chats", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId, projectId: targetValue }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de déplacer le chat")
+      }
+
+      const updated = payload?.chat as ChatRecord | undefined
+      if (updated) {
+        setChats((prev) =>
+          prev
+            .map((chat) => (chat.id === updated.id ? updated : chat))
+            .sort(
+              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            )
+        )
+        if (selectedChatId === chatId && updated.projectId !== selectedProjectId) {
+          setSelectedProjectId(updated.projectId)
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors du déplacement du chat", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de déplacer le chat"
+      setChatError(message)
+    } finally {
+      setMovingChatId(null)
+      setProjectPickerChatId(null)
+    }
+  }
+
+  const startRename = (chat: ChatRecord) => {
+    setRenamingChatId(chat.id)
+    setChatTitleInput(chat.title || "")
+    setChatError("")
+    setActionMenuChatId(null)
+  }
+
+  const cancelRename = () => {
+    setRenamingChatId(null)
+    setChatTitleInput("")
+  }
+
+  const handleRenameChat = async () => {
+    if (!renamingChatId) return
+    const nextTitle = chatTitleInput.trim()
+    if (!nextTitle) {
+      setChatError("Le titre ne peut pas être vide")
+      return
+    }
+    setChatError("")
+    try {
+      const res = await fetch("/api/chats", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: renamingChatId, title: nextTitle }),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        router.replace("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error ?? "Impossible de renommer le chat")
+      }
+
+      const updated = payload?.chat as ChatRecord | undefined
+      if (updated) {
+        setChats((prev) =>
+          prev
+            .map((chat) => (chat.id === updated.id ? updated : chat))
+            .sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            )
+        )
+      }
+    } catch (error) {
+      console.error("Erreur lors du renommage du chat", error)
+      const message =
+        error instanceof Error ? error.message : "Impossible de renommer le chat"
+      setChatError(message)
+    } finally {
+      cancelRename()
+    }
   }
 
   const handleTextareaInput = () => {
@@ -523,11 +847,12 @@ export default function ChatPage() {
     if (!session) return
     let active = true
 
-    const fetchChats = async () => {
+    const fetchWorkspace = async () => {
       setLoadingChats(true)
       setChatError("")
+      setProjectError("")
       try {
-        const res = await fetch("/api/chats")
+        const res = await fetch("/api/projects")
         const payload = await res.json().catch(() => ({}))
         if (!active) return
         if (res.status === 401) {
@@ -535,22 +860,44 @@ export default function ChatPage() {
           return
         }
         if (!res.ok) {
-          setChatError(payload?.error ?? "Impossible de charger vos chats")
+          setProjectError(payload?.error ?? "Impossible de charger vos projets")
           return
         }
+        const nextProjects = Array.isArray(payload?.projects) ? payload.projects : []
         const nextChats = Array.isArray(payload?.chats) ? payload.chats : []
+        nextProjects.sort(
+          (a: ProjectRecord, b: ProjectRecord) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
         nextChats.sort(
           (a: ChatRecord, b: ChatRecord) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         )
+        setProjects(nextProjects)
         setChats(nextChats)
-        if (!selectedChatId && nextChats.length > 0) {
-          setSelectedChatId(nextChats[0].id)
-        }
+        const resolvedProjectId =
+          selectedProjectId &&
+          nextProjects.some((p: ProjectRecord) => p.id === selectedProjectId)
+            ? selectedProjectId
+            : null
+        setSelectedProjectId(resolvedProjectId)
+        const unassignedAfterFetch = nextChats.filter(
+          (chat: ChatRecord) => !chat.projectId
+        )
+        const projectChats =
+          resolvedProjectId === null
+            ? unassignedAfterFetch
+            : nextChats.filter((chat: ChatRecord) => chat.projectId === resolvedProjectId)
+        const preservedChat =
+          selectedChatId &&
+          projectChats.some((chat: ChatRecord) => chat.id === selectedChatId)
+            ? selectedChatId
+            : null
+        setSelectedChatId(preservedChat ?? projectChats[0]?.id ?? unassignedAfterFetch[0]?.id ?? null)
       } catch (error) {
         if (!active) return
-        console.error("Erreur lors du chargement des chats", error)
-        setChatError("Impossible de charger vos chats")
+        console.error("Erreur lors du chargement des projets", error)
+        setProjectError("Impossible de charger vos projets")
       } finally {
         if (active) {
           setLoadingChats(false)
@@ -558,12 +905,29 @@ export default function ChatPage() {
       }
     }
 
-    fetchChats()
+    fetchWorkspace()
 
     return () => {
       active = false
     }
   }, [router, session])
+
+  useEffect(() => {
+    const projectChats = selectedProjectId
+      ? chats.filter((chat) => chat.projectId === selectedProjectId)
+      : chats.filter((chat) => !chat.projectId)
+
+    if (projectChats.length === 0) {
+      if (selectedChatId && !chats.some((chat) => chat.id === selectedChatId)) {
+        setSelectedChatId(null)
+      }
+      return
+    }
+
+    if (!selectedChatId || !projectChats.some((chat) => chat.id === selectedChatId)) {
+      setSelectedChatId(projectChats[0].id)
+    }
+  }, [chats, selectedProjectId, selectedChatId])
 
   const getFileIcon = (filename: string) => {
     const ext = filename.split(".").pop()?.toLowerCase()
@@ -596,6 +960,7 @@ export default function ChatPage() {
     const title = normalizeText(chat.title || "")
     return searchQuery === "" ? true : title.includes(searchQuery)
   })
+  const unassignedChats = filteredChats.filter((chat) => !chat.projectId)
   const userInitials =
     (session?.firstName?.[0] || "") + (session?.lastName?.[0] || "")
       ? `${(session?.firstName?.[0] || "").toUpperCase()}${(session?.lastName?.[0] || "").toUpperCase()}`
@@ -617,6 +982,13 @@ export default function ChatPage() {
 
   return (
     <div className="bg-background text-foreground flex min-h-svh">
+      {actionMenuChatId && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => setActionMenuChatId(null)}
+          aria-hidden="true"
+        />
+      )}
       <aside className="border-border bg-muted/40 flex w-80 flex-col gap-4 border-r p-6">
         <div className="flex items-center gap-3 mb-4">
 <Image
@@ -633,7 +1005,7 @@ export default function ChatPage() {
           <IconSearch className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Rechercher des chats"
+            placeholder="Rechercher un chat"
             className="w-full rounded-xl border border-border bg-background px-10 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -650,51 +1022,403 @@ export default function ChatPage() {
           {isCreatingChat ? "Création..." : "Nouveau chat"}
         </button>
         <button
-          className="text-foreground hover:bg-[#ededed] flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
-          onClick={handleNewProject}
+          className="text-foreground hover:bg-[#ededed] disabled:opacity-60 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
+          onClick={openProjectModal}
+          disabled={isCreatingProject || !session}
         >
           <IconPlusSquare className="h-4 w-4" />
-          Nouveau projet
+          {isCreatingProject ? "Création..." : "Nouveau projet"}
         </button>
 
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-6">
           <IconMenu className="h-3 w-3" />
-          Vos derniers chats
+          Chats sans projet
         </div>
         <div className="flex flex-col gap-2">
-          {loadingChats && (
-            <span className="text-xs text-muted-foreground">Chargement des chats...</span>
+          {unassignedChats.map((chat) => {
+            const isActiveChat = chat.id === selectedChatId
+            const isRenaming = renamingChatId === chat.id
+            return (
+              <div
+                key={chat.id}
+                className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
+                  isActiveChat ? "bg-[#ededed] border border-border" : "hover:bg-muted/60"
+                }`}
+              >
+                {isRenaming ? (
+                  <>
+                    <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
+                      <IconChat className="h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={chatTitleInput}
+                        onChange={(e) => setChatTitleInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              handleRenameChat()
+                            }
+                          }}
+                        />
+                      </div>
+                    <button
+                      className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRenameChat()
+                      }}
+                      aria-label="Enregistrer le titre"
+                    >
+                      <IconCheck className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        cancelRename()
+                      }}
+                      aria-label="Annuler"
+                    >
+                      <IconX className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setSelectedProjectId(null)
+                        setSelectedChatId(chat.id)
+                      }}
+                      className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
+                        isActiveChat
+                          ? "font-semibold text-foreground"
+                          : " text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      <IconChat className="h-4 w-4" />
+                      <span className="truncate">{chat.title || "Sans titre"}</span>
+                    </button>
+                    <div className="relative">
+                      <button
+                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActionMenuChatId((prev) => (prev === chat.id ? null : chat.id))
+                        }}
+                        aria-label="Actions du chat"
+                      >
+                        <IconMore className="h-4 w-4" />
+                      </button>
+                      {actionMenuChatId === chat.id && (
+                        <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
+                          <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setProjectPickerChatId(chat.id)
+                              setActionMenuChatId(null)
+                            }}
+                          >
+                            <IconMove className="h-4 w-4" />
+                            <span>Déplacer</span>
+                          </button>
+                          <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              startRename(chat)
+                              setActionMenuChatId(null)
+                            }}
+                          >
+                            <IconEdit className="h-4 w-4" />
+                            <span>Renommer</span>
+                          </button>
+                          <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActionMenuChatId(null)
+                              handleDeleteChat(chat.id)
+                            }}
+                            disabled={deletingChatId === chat.id}
+                          >
+                            <IconTrash className="h-4 w-4" />
+                            <span>Supprimer</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+          {!chatError && unassignedChats.length === 0 && (
+            <span className="text-xs text-muted-foreground px-1">Aucun chat pour le moment</span>
           )}
-          {!loadingChats &&
-            filteredChats.map((chat) => {
-              const isActive = chat.id === selectedChatId
-              return (
-                <button
-                  key={chat.id}
-                  onClick={() => setSelectedChatId(chat.id)}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer ${
-                    isActive
-                      ? "bg-[#ededed] font-semibold text-foreground border border-border"
-                      : " text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  <IconChat className="h-4 w-4" />
-                  {chat.title || "Sans titre"}
-                </button>
-              )
-            })}
-          {!loadingChats && filteredChats.length === 0 && (
+          {chatError && <span className="text-xs text-red-500">{chatError}</span>}
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-6">
+          <IconMenu className="h-3 w-3" />
+          Vos projets
+        </div>
+        <div className="flex flex-col gap-3">
+          {loadingChats ? (
+            <span className="text-xs text-muted-foreground">Chargement...</span>
+          ) : null}
+          {projectError && !loadingChats ? (
+            <span className="text-xs text-red-500">{projectError}</span>
+          ) : null}
+          {!loadingChats && projects.length === 0 && (
             <span className="text-xs text-muted-foreground">
-              {chatError
-                ? chatError
-                : searchTerm
-                  ? "Aucun chat ne correspond à la recherche"
-                  : "Aucun chat pour le moment"}
+              Aucun projet pour le moment
             </span>
           )}
-          {chatError && !loadingChats && filteredChats.length > 0 && (
-            <span className="text-xs text-red-500">{chatError}</span>
-          )}
+          {projects.map((project) => {
+            const projectChats = chats.filter((chat) => chat.projectId === project.id)
+            const isActiveProject = project.id === selectedProjectId
+            const visibleChats = isActiveProject
+              ? filteredChats.filter((chat) => chat.projectId === project.id)
+              : []
+            const isRenamingProject = renamingProjectId === project.id
+            return (
+              <div
+                key={project.id}
+                className="rounded-xl border border-border bg-background/60 shadow-sm"
+              >
+                <div
+                  className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                    isActiveProject ? "bg-muted/70 font-semibold" : "hover:bg-muted/50"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProjectId(project.id)
+                      if (!projectChats.some((chat) => chat.id === selectedChatId)) {
+                        setSelectedChatId(projectChats[0]?.id ?? null)
+                      }
+                    }}
+                    className="flex flex-1 items-start gap-3 text-left"
+                  >
+                    <IconFolder className="h-4 w-4 mt-1" />
+                    <div className="flex flex-col flex-1">
+                      {isRenamingProject ? (
+                        <input
+                          type="text"
+                          value={projectRenameInput}
+                          onChange={(e) => setProjectRenameInput(e.target.value)}
+                          className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              handleRenameProject()
+                            }
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <span className="truncate">{project.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {projectChats.length} {projectChats.length > 1 ? "chats" : "chat"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  {isRenamingProject ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRenameProject()
+                        }}
+                        aria-label="Enregistrer le projet"
+                      >
+                        <IconCheck className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          cancelRenameProject()
+                        }}
+                        aria-label="Annuler"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startRenameProject(project)
+                        }}
+                        aria-label="Renommer le projet"
+                      >
+                        <IconEdit className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="text-muted-foreground hover:text-red-600 rounded-full p-1 transition cursor-pointer disabled:opacity-50"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteProject(project.id)
+                        }}
+                        disabled={deletingProjectId === project.id}
+                        aria-label="Supprimer le projet"
+                      >
+                        <IconTrash className="h-4 w-4" />
+                      </button>
+                      {isActiveProject ? (
+                        <span className="text-[10px] font-semibold text-primary px-1">Actif</span>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+                {isActiveProject ? (
+                  <div className="flex flex-col gap-2 px-2 pb-3 pt-1">
+                    {visibleChats.map((chat) => {
+                      const isActiveChat = chat.id === selectedChatId
+                      const isRenaming = renamingChatId === chat.id
+                      return (
+                        <div
+                          key={chat.id}
+                          className={`flex items-center gap-2 rounded-xl px-2 py-1 ${
+                            isActiveChat ? "bg-[#ededed] border border-border" : ""
+                          }`}
+                        >
+                          {isRenaming ? (
+                            <>
+                              <div className="flex flex-1 items-center gap-2 rounded-lg px-2 py-1">
+                                <IconChat className="h-4 w-4 text-muted-foreground" />
+                                <input
+                                  type="text"
+                                  value={chatTitleInput}
+                                  onChange={(e) => setChatTitleInput(e.target.value)}
+                                  className="w-full rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault()
+                                      handleRenameChat()
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <button
+                                className="text-emerald-600 hover:text-emerald-700 rounded-full p-1 transition cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRenameChat()
+                                }}
+                                aria-label="Enregistrer le titre"
+                              >
+                                <IconCheck className="h-4 w-4" />
+                              </button>
+                              <button
+                                className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  cancelRename()
+                                }}
+                                aria-label="Annuler"
+                              >
+                                <IconX className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedProjectId(project.id)
+                                  setSelectedChatId(chat.id)
+                                }}
+                                className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1 text-sm transition cursor-pointer ${
+                                  isActiveChat
+                                    ? "font-semibold text-foreground"
+                                    : " text-muted-foreground hover:bg-muted/80"
+                                }`}
+                              >
+                                <IconChat className="h-4 w-4" />
+                                <span className="truncate">{chat.title || "Sans titre"}</span>
+                              </button>
+                              <div className="relative">
+                                <button
+                                  className="text-muted-foreground hover:text-foreground rounded-full p-1 transition cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActionMenuChatId((prev) =>
+                                      prev === chat.id ? null : chat.id
+                                    )
+                                  }}
+                                  aria-label="Actions du chat"
+                                >
+                                  <IconMore className="h-4 w-4" />
+                                </button>
+                                {actionMenuChatId === chat.id && (
+                                  <div className="absolute right-0 top-[calc(100%+4px)] z-40 w-44 rounded-xl border border-border bg-white shadow-lg">
+                                    <button
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setProjectPickerChatId(chat.id)
+                                        setActionMenuChatId(null)
+                                      }}
+                                    >
+                                      <IconMove className="h-4 w-4" />
+                                      <span>Déplacer</span>
+                                    </button>
+                                    <button
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        startRename(chat)
+                                        setActionMenuChatId(null)
+                                      }}
+                                    >
+                                      <IconEdit className="h-4 w-4" />
+                                      <span>Renommer</span>
+                                    </button>
+                                    <button
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition cursor-pointer disabled:opacity-50"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setActionMenuChatId(null)
+                                        handleDeleteChat(chat.id)
+                                      }}
+                                      disabled={deletingChatId === chat.id}
+                                    >
+                                      <IconTrash className="h-4 w-4" />
+                                      <span>Supprimer</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {!chatError && visibleChats.length === 0 && (
+                      <span className="text-xs text-muted-foreground px-1">
+                        {searchTerm
+                          ? "Aucun chat ne correspond à la recherche"
+                          : "Aucun chat dans ce projet"}
+                      </span>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
 
         <div className="mt-auto flex flex-col gap-2">
@@ -927,6 +1651,132 @@ export default function ChatPage() {
           ))}
         </div>
       </div>
+      {showProjectModal && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => {
+              if (!isCreatingProject) {
+                setShowProjectModal(false)
+                setProjectError("")
+              }
+            }}
+          />
+          <Card className="relative z-40 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Nouveau projet
+                </p>
+                <h3 className="text-lg font-semibold">Organisez vos chats</h3>
+              </div>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground rounded-full p-2 transition"
+                onClick={() => {
+                  if (!isCreatingProject) {
+                    setShowProjectModal(false)
+                    setProjectError("")
+                  }
+                }}
+              >
+                <IconX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 px-5 py-4">
+              <label className="text-sm font-medium text-foreground" htmlFor="project-name">
+                Nom du projet
+              </label>
+              <input
+                id="project-name"
+                type="text"
+                value={projectNameInput}
+                onChange={(e) => setProjectNameInput(e.target.value)}
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+                placeholder="Ex: Lancement produit"
+                disabled={isCreatingProject}
+                autoFocus
+              />
+              {projectError ? (
+                <span className="text-xs text-red-500">{projectError}</span>
+              ) : null}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="rounded-full px-4 py-2 cursor-pointer"
+                  onClick={() => {
+                    if (!isCreatingProject) {
+                      setShowProjectModal(false)
+                      setProjectError("")
+                    }
+                  }}
+                  disabled={isCreatingProject}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  className="rounded-full px-4 py-2 cursor-pointer"
+                  onClick={handleNewProject}
+                  disabled={isCreatingProject}
+                >
+                  {isCreatingProject ? "Création..." : "Créer le projet"}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+      {projectPickerChatId && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setProjectPickerChatId(null)}
+          />
+          <Card className="relative z-50 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Déplacer le chat
+                </p>
+                <h3 className="text-lg font-semibold">Sélectionner un projet</h3>
+              </div>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground rounded-full p-2 transition"
+                onClick={() => setProjectPickerChatId(null)}
+              >
+                <IconX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 px-5 py-4">
+              <button
+                className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition cursor-pointer"
+                onClick={() => handleMoveChat(projectPickerChatId, null)}
+                disabled={movingChatId === projectPickerChatId}
+              >
+                <span>Sans projet</span>
+                <span className="text-xs text-muted-foreground">Par défaut</span>
+              </button>
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition cursor-pointer disabled:opacity-50"
+                  onClick={() => handleMoveChat(projectPickerChatId, project.id)}
+                  disabled={movingChatId === projectPickerChatId}
+                >
+                  <div className="flex items-center gap-2">
+                    <IconFolder className="h-4 w-4" />
+                    <span>{project.name}</span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {chats.filter((c) => c.projectId === project.id).length} chats
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
       {showSettings && (
         <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-8">
           <div
@@ -1284,6 +2134,25 @@ function IconChat(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
+function IconFolder(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M3 7h5l2 3h11v9H3z" />
+      <path d="M3 7h18V5H9L7 3H3z" />
+    </svg>
+  )
+}
+
 function IconGlobe(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -1546,6 +2415,28 @@ function IconPlusSquare(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
+function IconTrash(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M14 10v8" />
+      <path d="M10 10v8" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
 function IconSettings(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -1561,6 +2452,65 @@ function IconSettings(props: React.SVGProps<SVGSVGElement>) {
     >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 4.09V4a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  )
+}
+
+function IconMove(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="5" y="5" width="10" height="14" rx="2" />
+      <path d="m15 10 4-4" />
+      <path d="M15 6h4v4" />
+    </svg>
+  )
+}
+
+function IconMore(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
+    </svg>
+  )
+}
+
+function IconEdit(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
     </svg>
   )
 }
@@ -1621,6 +2571,24 @@ function IconSparkle(props: React.SVGProps<SVGSVGElement>) {
       <path d="m12 3-1.5 5h3L12 3Z" />
       <path d="m5 13-2 7 7-2-7-2 2-7 7 2" />
       <path d="m19 11-1 4 4 1-4 1-1 4-1-4-4-1 4-1 1-4Z" />
+    </svg>
+  )
+}
+
+function IconCheck(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   )
 }
