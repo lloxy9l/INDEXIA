@@ -55,6 +55,9 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState(models[0])
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState("")
+  const [chatHistory, setChatHistory] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([])
   const [isListening, setIsListening] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<
     { name: string; size: number }[]
@@ -479,6 +482,17 @@ export default function ChatPage() {
     const nextHeight = Math.min(el.scrollHeight, 240)
     el.style.height = `${nextHeight}px`
     el.style.overflowY = el.scrollHeight > nextHeight ? "auto" : "hidden"
+  }
+
+  const handleSendMessage = () => {
+    const trimmed = message.trim()
+    if (!trimmed) return
+    setChatHistory((prev) => [
+      ...prev,
+      { role: "user", content: trimmed },
+      { role: "assistant", content: "hello world" },
+    ])
+    setMessage("")
   }
 
   useEffect(() => {
@@ -1492,98 +1506,84 @@ export default function ChatPage() {
 
       <SidebarInset>
         <SiteHeader title={headerTitle} />
-        <div className="bg-background text-foreground flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
-          <div className="flex flex-1 flex-col items-center justify-center rounded-3xl  bg-white/90 p-8">
-            <div className="mb-6 flex items-center justify-center">
-              <Image
-                src={logoSrc}
-                alt="Logo"
-                width={180}
-                height={180}
-                priority
-                unoptimized
-              />
-            </div>
-            <Card className="w-[840px] max-w-full rounded-3xl border border-border/70 bg-white shadow-sm">
-              <CardContent className="flex flex-col gap-1 px-6 py-1">
+        <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
+          <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
+            <Card className="w-[960px] max-w-full flex-1 rounded-3xl border border-border/70 bg-white shadow-sm">
+              <CardContent className="flex h-full flex-col gap-4 px-6 py-4">
+                <div className="flex-1 overflow-y-auto">
+                  {chatHistory.length === 0 ? (
+                    <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                      Commencez une conversation pour voir vos messages ici.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {chatHistory.map((entry, index) => (
+                        <div
+                          key={`${entry.role}-${index}`}
+                          className={`flex ${
+                            entry.role === "assistant" ? "justify-start" : "justify-end"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                              entry.role === "assistant"
+                                ? "bg-muted text-foreground"
+                                : "bg-black text-white"
+                            }`}
+                          >
+                            {entry.content}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="absolute bottom-5 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur">
+              <CardContent className="flex flex-col gap-3 px-6 py-3">
                 <textarea
                   rows={1}
                   ref={textareaRef}
                   onInput={handleTextareaInput}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
                   placeholder="Demandez, cherchez ou faites ce que vous voulez..."
-                  className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px] pb-2"
+                  className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-lg leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[240px]"
                 />
-
-                {uploadedFiles.length > 0 && (
-                  <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 mb-3">
-                    <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
-                      {getFileIcon(uploadedFiles[0].name)}
-                      {uploadedFiles.length === 1
-                        ? "1 fichier"
-                        : `${uploadedFiles.length} fichiers`}
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {uploadedFiles.slice(0, 3).map((file) => (
-                        <span
-                          key={file.name}
-                          className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
-                        >
-                          {getFileIcon(file.name)}
-                          <span>{file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFile(file.name)}
-                            className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
-                            aria-label={`Supprimer ${file.name}`}
-                          >
-                            <IconX className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                      {uploadedFiles.length > 3 && (
-                        <span className="rounded-full bg-background px-2 py-1 shadow-sm">
-                          +{uploadedFiles.length - 3} autres
-                        </span>
-                      )}
-                    </div>
-                    {fileNotice && (
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {fileNotice}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      multiple
-                      onChange={(e) => handleFilesSelected(e.target.files)}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleFileClick}
-                      className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md bg-transparent transition cursor-pointer"
-                      aria-label="Joindre un fichier"
-                    >
-                      <IconPaperclip className="h-5 w-5" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
-                        isListening ? "bg-black text-white border-black" : "bg-transparent"
-                      }`}
-                      aria-label="Dicter un message"
-                      onClick={handleVoiceClick}
-                    >
-                      <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
-                    </button>
-                  </div>
-                  <div className="relative flex items-center">
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={(e) => handleFilesSelected(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFileClick}
+                    className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent shadow-md transition cursor-pointer"
+                    aria-label="Joindre un fichier"
+                  >
+                    <IconPaperclip className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
+                      isListening ? "bg-black text-white border-black" : "bg-transparent"
+                    }`}
+                    aria-label="Dicter un message"
+                    onClick={handleVoiceClick}
+                  >
+                    <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
+                  </button>
+                  <div className="relative ml-1 flex items-center">
                     <button
                       type="button"
                       onClick={() => setOpen((v) => !v)}
@@ -1638,61 +1638,102 @@ export default function ChatPage() {
                   </div>
                   <Button
                     size="icon"
-                    className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl"
+                    className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl disabled:opacity-50"
+                    onClick={handleSendMessage}
+                    disabled={!message.trim()}
                   >
                     <IconArrowUp className="h-10 w-10" />
                   </Button>
                 </div>
+                {uploadedFiles.length > 0 && (
+                  <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3">
+                    <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
+                      {getFileIcon(uploadedFiles[0].name)}
+                      {uploadedFiles.length === 1
+                        ? "1 fichier"
+                        : `${uploadedFiles.length} fichiers`}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {uploadedFiles.slice(0, 3).map((file) => (
+                        <span
+                          key={file.name}
+                          className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
+                        >
+                          {getFileIcon(file.name)}
+                          <span>{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(file.name)}
+                            className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
+                            aria-label={`Supprimer ${file.name}`}
+                          >
+                            <IconX className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                      {uploadedFiles.length > 3 && (
+                        <span className="rounded-full bg-background px-2 py-1 shadow-sm">
+                          +{uploadedFiles.length - 3} autres
+                        </span>
+                      )}
+                    </div>
+                    {fileNotice && (
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {fileNotice}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
+                  {[
+                    {
+                      icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
+                      label: "Analyse data",
+                      bg: "bg-cyan-50",
+                      text: "text-cyan-900",
+                      border: "border-cyan-200",
+                    },
+                    {
+                      icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
+                      label: "Résumer texte",
+                      bg: "bg-amber-50",
+                      text: "text-amber-900",
+                      border: "border-amber-200",
+                    },
+                    {
+                      icon: <IconShield className="h-4 w-4 text-emerald-700" />,
+                      label: "Vérifier droits",
+                      bg: "bg-emerald-50",
+                      text: "text-emerald-900",
+                      border: "border-emerald-200",
+                    },
+                    {
+                      icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
+                      label: "Comparer pipelines",
+                      bg: "bg-indigo-50",
+                      text: "text-indigo-900",
+                      border: "border-indigo-200",
+                    },
+                    {
+                      icon: <IconChart className="h-4 w-4 text-rose-700" />,
+                      label: "Benchmark",
+                      bg: "bg-rose-50",
+                      text: "text-rose-900",
+                      border: "border-rose-200",
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
-              {[
-                {
-                  icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
-                  label: "Analyse data",
-                  bg: "bg-cyan-50",
-                  text: "text-cyan-900",
-                  border: "border-cyan-200",
-                },
-                {
-                  icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
-                  label: "Résumer texte",
-                  bg: "bg-amber-50",
-                  text: "text-amber-900",
-                  border: "border-amber-200",
-                },
-                {
-                  icon: <IconShield className="h-4 w-4 text-emerald-700" />,
-                  label: "Vérifier droits",
-                  bg: "bg-emerald-50",
-                  text: "text-emerald-900",
-                  border: "border-emerald-200",
-                },
-                {
-                  icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
-                  label: "Comparer pipelines",
-                  bg: "bg-indigo-50",
-                  text: "text-indigo-900",
-                  border: "border-indigo-200",
-                },
-                {
-                  icon: <IconChart className="h-4 w-4 text-rose-700" />,
-                  label: "Benchmark",
-                  bg: "bg-rose-50",
-                  text: "text-rose-900",
-                  border: "border-rose-200",
-                },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       {showProjectModal && (
