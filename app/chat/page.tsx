@@ -140,14 +140,29 @@ const renderMarkdown = (content: string) => {
 export default function ChatPage() {
   const router = useRouter()
   const logoSrc = "/logo.png"
-  const models = [
-    { value: "llama3.2", label: "Llama 3.2", icon: "/icon-meta.jpg" },
-    { value: "llama3", label: "Llama 3", icon: "/icon-meta.jpg" },
-    { value: "mistral", label: "Mistral", icon: "/icon-mistral.png" },
-    { value: "qwen2.5", label: "Qwen 2.5", icon: "/icon-deepseek.jpg" },
-    { value: "gemma2", label: "Gemma 2", icon: "/icon-gemini-ai.jpg" },
-  ]
-  const [selectedModel, setSelectedModel] = useState(models[0])
+  const normalizeModelName = (value: string) => value.split(":")[0].toLowerCase()
+  const resolveModelIcon = (value: string) => {
+    const lower = value.toLowerCase()
+    if (lower.includes("mistral-nemo")) return "/icon-mistral.png"
+    if (lower.includes("mistral") || lower.includes("mixtral")) return "/icon-mistral.png"
+    if (lower.includes("qwen") || lower.includes("deepseek")) return "/icon-deepseek.jpg"
+    if (lower.includes("gemma") || lower.includes("gemini")) return "/icon-gemini-ai.jpg"
+    return "/icon-meta.jpg"
+  }
+  const fixedModelValues = ["llama3.2", "qwen3:4b"]
+  const fixedModelOptions = fixedModelValues.map((value) => ({
+    value,
+    label: value,
+    icon: resolveModelIcon(value),
+    installed: false,
+  }))
+  type ModelOption = { value: string; label: string; icon?: string; installed?: boolean }
+  const [models, setModels] = useState<ModelOption[]>(fixedModelOptions)
+  const [selectedModel, setSelectedModel] = useState<ModelOption | null>(
+    fixedModelOptions[0] ?? null
+  )
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [modelError, setModelError] = useState("")
   const [open, setOpen] = useState(false)
   const [ragEnabled, setRagEnabled] = useState(false)
   const [message, setMessage] = useState("")
@@ -276,21 +291,37 @@ export default function ChatPage() {
       )
     }
 
+    const modelId = selectedModel?.value
+    if (!modelId) {
+      setChatError("Aucun modèle installé. Téléchargez-en un via Ollama puis réessayez.")
+      return
+    }
+    setChatError("")
+
     try {
-      const res = await fetch("/api/llm", {
+      const res = await fetch(`/api/llm?model=${encodeURIComponent(modelId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: selectedModel.value || "llama3.2",
+          model: modelId,
           messages,
         }),
       })
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "")
-        const detail =
-          (text && text.trim()) ||
-          `Impossible d'obtenir la réponse (statut ${res.status})`
+        const contentType = res.headers.get("content-type") || ""
+        let detail = `Impossible d'obtenir la réponse (statut ${res.status})`
+        if (contentType.includes("application/json")) {
+          const payload = await res.json().catch(() => null)
+          if (payload?.error && typeof payload.error === "string") {
+            detail = payload.error
+          }
+        } else {
+          const text = await res.text().catch(() => "")
+          if (text && text.trim()) {
+            detail = text.trim()
+          }
+        }
         throw new Error(detail)
       }
 
@@ -349,7 +380,7 @@ export default function ChatPage() {
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Réponse indisponible"
       const fallback = /fetch failed/i.test(rawMessage)
-        ? "Impossible de joindre le modèle. Vérifiez qu'il est bien lancé localement."
+        ? `Impossible de joindre le modèle ${modelId}. Vérifiez qu'il est bien lancé localement.`
         : rawMessage
       setChatHistory((prev) =>
         prev.map((entry) =>
@@ -810,6 +841,10 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     const trimmed = message.trim()
     if (!trimmed || isSending) return
+    if (!selectedModel) {
+      setChatError("Aucun modèle installé. Téléchargez-en un via Ollama.")
+      return
+    }
     try {
       setIsSending(true)
       setChatError("")
@@ -859,6 +894,55 @@ export default function ChatPage() {
       setIsSending(false)
     }
   }
+
+  useEffect(() => {
+    let active = true
+    const fetchModels = async () => {
+      setModelsLoading(true)
+      setModelError("")
+      try {
+        const res = await fetch("/api/llm")
+        if (!res.ok) {
+          throw new Error(`Statut ${res.status}`)
+        }
+        const payload = await res.json().catch(() => null)
+        const list = Array.isArray(payload?.models) ? payload.models : []
+        const installedList = Array.isArray(payload?.installed) ? payload.installed : []
+        const installedSet = new Set(
+          installedList
+            .map((name: any) => (typeof name === "string" ? normalizeModelName(name) : ""))
+            .filter(Boolean)
+        )
+        const normalized = list
+          .map((name: any) => (typeof name === "string" ? name.trim() : ""))
+          .filter(Boolean)
+          .map((value: string) => ({
+            value,
+            label: value,
+            icon: resolveModelIcon(value),
+            installed: installedSet.has(normalizeModelName(value)),
+          }))
+        const finalModels = normalized.length > 0 ? normalized : fixedModelOptions
+        if (!active) return
+        setModels(finalModels)
+        setSelectedModel((prev) => {
+          const match = finalModels.find((m) => m.value === prev?.value)
+          return match ?? finalModels[0]
+        })
+      } catch (error) {
+        if (!active) return
+        setModelError("Impossible de charger la liste des modèles installés.")
+        setModels(fixedModelOptions)
+        setSelectedModel(fixedModelOptions[0] ?? null)
+      } finally {
+        if (active) setModelsLoading(false)
+      }
+    }
+    fetchModels()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     handleTextareaInput()
@@ -1940,11 +2024,11 @@ export default function ChatPage() {
         <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 overflow-hidden px-4 pb-8 pt-4 lg:px-8">
           <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
             <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none">
-              <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
-                <div className="flex-1 overflow-y-auto" ref={messagesContainerRef}>
-                  {chatHistory.length === 0 ? (
-                    <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-                      Commencez une conversation pour voir vos messages ici.
+            <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
+              <div className="flex-1 overflow-y-auto" ref={messagesContainerRef}>
+                {chatHistory.length === 0 ? (
+                  <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                    Commencez une conversation pour voir vos messages ici.
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
@@ -2041,6 +2125,11 @@ export default function ChatPage() {
                 </div>
               </CardContent>
             </Card>
+            {chatError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700 shadow-sm">
+                {chatError}
+              </div>
+            ) : null}
             <Card className="absolute bottom-0 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur">
               <CardContent className="flex flex-col gap-3 px-6 py-3">
                 <textarea
@@ -2084,58 +2173,83 @@ export default function ChatPage() {
                   >
                     <IconMic className={`h-5 w-5 ${isListening ? "text-white" : ""}`} />
                   </button>
-                  <div className="relative ml-1 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setOpen((v) => !v)}
-                      className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted cursor-pointer"
-                    >
-                      <Image
-                        src={selectedModel.icon}
-                        alt={selectedModel.label}
-                        width={18}
-                        height={18}
-                        className="rounded"
-                      />
-                      <span>{selectedModel.label}</span>
-                    </button>
-                    {open && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setOpen(false)}
-                          aria-hidden="true"
+                  <div className="flex min-w-0 flex-col">
+                    <div className="relative ml-1 flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => setOpen((v) => !v)}
+                        className="border-border text-sm text-foreground/90 flex items-center gap-2 rounded-3xl border bg-transparent px-3 py-2 pr-4 shadow-sm transition hover:bg-muted cursor-pointer disabled:opacity-60"
+                        disabled={models.length === 0}
+                      >
+                        <Image
+                          src={selectedModel?.icon ?? "/icon-meta.jpg"}
+                          alt={selectedModel?.label ?? "Modèle"}
+                          width={18}
+                          height={18}
+                          className="rounded"
                         />
-                        <div className="border-border bg-background absolute left-0 bottom-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
-                          <ul className="flex flex-col divide-y divide-border/70">
-                            {models.map((model) => (
-                              <li key={model.value}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedModel(model)
-                                    setOpen(false)
-                                  }}
-                                  className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted cursor-pointer"
-                                >
-                                  <Image
-                                    src={model.icon}
+                        <span>
+                          {modelsLoading
+                            ? "Chargement..."
+                            : selectedModel?.label ?? "Aucun modèle installé"}
+                        </span>
+                      </button>
+                      {open && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpen(false)}
+                            aria-hidden="true"
+                          />
+                          <div className="border-border bg-background absolute left-0 bottom-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
+                            <ul className="flex flex-col divide-y divide-border/70">
+                              {modelsLoading ? (
+                                <li className="px-3 py-2 text-xs text-muted-foreground">
+                                  Chargement...
+                                </li>
+                              ) : null}
+                              {!modelsLoading && models.length === 0 ? (
+                                <li className="px-3 py-2 text-xs text-muted-foreground">
+                                  Aucun modèle installé
+                                </li>
+                              ) : null}
+                              {models.map((model) => (
+                                <li key={model.value}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedModel(model)
+                                      setOpen(false)
+                                    }}
+                                    className="text-foreground flex w-full items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted cursor-pointer"
+                                  >
+                                    <Image
+                                      src={model.icon}
                                     alt={model.label}
                                     width={18}
                                     height={18}
                                     className="rounded"
                                   />
                                   <span className="flex-1 text-left">{model.label}</span>
-                                  {selectedModel.value === model.value ? (
-                                    <span className="text-xs text-primary">●</span>
-                                  ) : null}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </>
-                    )}
+                                    {selectedModel?.value === model.value ? (
+                                      <span className="text-xs text-primary">●</span>
+                                    ) : null}
+                                    {!model.installed ? (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Non téléchargé
+                                      </span>
+                                    ) : null}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {modelError ? (
+                      <span className="text-[11px] text-red-600 ml-1 mt-1">{modelError}</span>
+                    ) : null}
                   </div>
                   <div className="ml-2 flex items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -2165,14 +2279,14 @@ export default function ChatPage() {
                       Recherche avant r&eacute;ponse
                     </span>
                   </div>
-                  <Button
-                    size="icon"
-                    className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl disabled:opacity-50"
-                    onClick={handleSendMessage}
-                    disabled={!message.trim()}
-                  >
-                    <IconArrowUp className="h-10 w-10" />
-                  </Button>
+                <Button
+                  size="icon"
+                  className="ml-auto h-9 w-9 rounded-full bg-black text-white hover:bg-black/90 cursor-pointer shadow-xl disabled:opacity-50"
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || !selectedModel}
+                >
+                  <IconArrowUp className="h-10 w-10" />
+                </Button>
                 </div>
                 {uploadedFiles.length > 0 && (
                   <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3">
