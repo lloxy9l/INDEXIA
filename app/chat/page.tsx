@@ -45,12 +45,11 @@ export default function ChatPage() {
   const router = useRouter()
   const logoSrc = "/logo.png"
   const models = [
-    { value: "gpt-4o-mini", label: "GPT 4o-mini", icon: "/icon-chatgpt.jpg" },
-    { value: "deepseek-r1", label: "Deepseek R1", icon: "/icon-deepseek.jpg" },
-    { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet", icon: "/icon-claude-ai.jpg" },
-    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash", icon: "/icon-gemini-ai.jpg" },
-    { value: "llama-3-8b", label: "Llama 3 8b", icon: "/icon-meta.jpg" },
-    { value: "mistral-7b", label: "Mistral 7b", icon: "/icon-mistral.png" },
+    { value: "llama3.2", label: "Llama 3.2", icon: "/icon-meta.jpg" },
+    { value: "llama3", label: "Llama 3", icon: "/icon-meta.jpg" },
+    { value: "mistral", label: "Mistral", icon: "/icon-mistral.png" },
+    { value: "qwen2.5", label: "Qwen 2.5", icon: "/icon-deepseek.jpg" },
+    { value: "gemma2", label: "Gemma 2", icon: "/icon-gemini-ai.jpg" },
   ]
   const [selectedModel, setSelectedModel] = useState(models[0])
   const [open, setOpen] = useState(false)
@@ -63,6 +62,7 @@ export default function ChatPage() {
       status?: "loading" | "typing" | "done"
     }[]
   >([])
+  const [isSending, setIsSending] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<
     { name: string; size: number }[]
@@ -134,18 +134,119 @@ export default function ChatPage() {
     typingTimeoutsRef.current = []
   }
 
-  const pickLorem = () => {
-    const loremVariants = [
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-    ]
-    return loremVariants[Math.floor(Math.random() * loremVariants.length)]
+  const mapToOllamaMessages = (
+    entries: { role: "user" | "assistant"; content: string }[]
+  ) =>
+    entries
+      .filter((entry) => entry.content && entry.content.trim().length > 0)
+      .map((entry) => ({ role: entry.role, content: entry.content }))
+
+  const requestAssistantReply = async (
+    messages: { role: "user" | "assistant"; content: string }[],
+    assistantId: string
+  ) => {
+    type SimpleEntry = {
+      id: string
+      role: "user" | "assistant"
+      content: string
+      status?: "loading" | "typing" | "done"
+    }
+
+    const updateAssistant = (updater: (entry: SimpleEntry) => SimpleEntry) => {
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === assistantId ? updater(entry) : entry
+        )
+      )
+    }
+
+    try {
+      const res = await fetch("/api/llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: selectedModel.value || "llama3.2",
+          messages,
+        }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "")
+        const detail =
+          (text && text.trim()) ||
+          `Impossible d'obtenir la réponse (statut ${res.status})`
+        throw new Error(detail)
+      }
+
+      if (!res.body) {
+        throw new Error("Flux de réponse vide")
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let acc = ""
+
+      while (true) {
+        const { value, done } = await reader.read()
+        const chunk = decoder.decode(value || new Uint8Array(), { stream: !done })
+        buffer += chunk
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+
+        for (const raw of lines) {
+          const line = raw.trim()
+          if (!line) continue
+          try {
+            const data = JSON.parse(line)
+            const delta =
+              typeof data?.message?.content === "string"
+                ? data.message.content
+                : ""
+            if (delta) {
+              acc += delta
+              updateAssistant((entry) => ({
+                ...entry,
+                content: acc,
+                status: data?.done ? "done" : "typing",
+              }))
+            }
+            if (data?.done) {
+              updateAssistant((entry) => ({ ...entry, status: "done" }))
+            }
+          } catch {
+            // ignore malformed lines
+          }
+        }
+
+        if (done) break
+      }
+
+      // Safeguard: ensure final status/content are set
+      updateAssistant((entry) => ({
+        ...entry,
+        content: acc || entry.content || "Pas de réponse",
+        status: "done",
+      }))
+    } catch (error) {
+      const fallback =
+        error instanceof Error ? error.message : "Réponse indisponible"
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === assistantId
+            ? {
+                ...entry,
+                content: `Erreur: ${fallback}`,
+                status: "done",
+              }
+            : entry
+        )
+      )
+      setChatError(fallback)
+    }
   }
 
   const startAssistantResponse = (assistantId: string) => {
-    const loremText = pickLorem()
     clearTypingTimeouts()
     setChatHistory((prev) =>
       prev.map((entry) =>
@@ -154,37 +255,10 @@ export default function ChatPage() {
           : entry
       )
     )
-    const loadingDelay = window.setTimeout(() => {
-      setChatHistory((prev) =>
-        prev.map((entry) =>
-          entry.id === assistantId ? { ...entry, status: "typing" } : entry
-        )
-      )
-
-      const typeNext = (index: number) => {
-        setChatHistory((prev) =>
-          prev.map((entry) =>
-            entry.id === assistantId
-              ? { ...entry, content: loremText.slice(0, index), status: "typing" }
-              : entry
-          )
-        )
-
-        if (index <= loremText.length) {
-          const nextTimeout = window.setTimeout(() => typeNext(index + 1), 18)
-          typingTimeoutsRef.current.push(nextTimeout)
-        } else {
-          setChatHistory((prev) =>
-            prev.map((entry) =>
-              entry.id === assistantId ? { ...entry, status: "done" } : entry
-            )
-          )
-        }
-      }
-
-      typeNext(1)
-    }, 1600)
-    typingTimeoutsRef.current.push(loadingDelay)
+    const messages = mapToOllamaMessages(
+      chatHistory.filter((entry) => entry.id !== assistantId)
+    )
+    requestAssistantReply(messages, assistantId)
   }
 
   const handleCopy = async (content: string) => {
@@ -580,18 +654,39 @@ export default function ChatPage() {
     el.style.overflowY = el.scrollHeight > nextHeight ? "auto" : "hidden"
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const trimmed = message.trim()
-    if (!trimmed) return
+    if (!trimmed || isSending) return
     const userId = `user-${Date.now()}-${messageIdRef.current++}`
     const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
-    setChatHistory((prev) => [
-      ...prev,
-      { id: userId, role: "user", content: trimmed, status: "done" },
-      { id: assistantId, role: "assistant", content: "", status: "loading" },
-    ])
+    const userEntry = {
+      id: userId,
+      role: "user" as const,
+      content: trimmed,
+      status: "done",
+    }
+    const assistantEntry = {
+      id: assistantId,
+      role: "assistant" as const,
+      content: "",
+      status: "loading",
+    }
+    const historyMessages = mapToOllamaMessages(chatHistory)
+    const payloadMessages = [
+      ...historyMessages,
+      { role: "user" as const, content: trimmed },
+    ]
+
+    setChatHistory((prev) => [...prev, userEntry, assistantEntry])
     setMessage("")
-    startAssistantResponse(assistantId)
+    clearTypingTimeouts()
+    setChatError("")
+    setIsSending(true)
+    try {
+      await requestAssistantReply(payloadMessages, assistantId)
+    } finally {
+      setIsSending(false)
+    }
   }
 
   useEffect(() => {
