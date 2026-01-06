@@ -56,7 +56,12 @@ export default function ChatPage() {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState<
-    { role: "user" | "assistant"; content: string }[]
+    {
+      id: string
+      role: "user" | "assistant"
+      content: string
+      status?: "loading" | "typing" | "done"
+    }[]
   >([])
   const [isListening, setIsListening] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<
@@ -117,6 +122,14 @@ export default function ChatPage() {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const messageIdRef = useRef(0)
+  const typingTimeoutsRef = useRef<number[]>([])
+
+  const clearTypingTimeouts = () => {
+    typingTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    typingTimeoutsRef.current = []
+  }
 
   const handleNewChat = async () => {
     if (isCreatingChat) return
@@ -487,12 +500,55 @@ export default function ChatPage() {
   const handleSendMessage = () => {
     const trimmed = message.trim()
     if (!trimmed) return
+    const userId = `user-${Date.now()}-${messageIdRef.current++}`
+    const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
+    const loremVariants = [
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
+    ]
+    const loremText =
+      loremVariants[Math.floor(Math.random() * loremVariants.length)]
     setChatHistory((prev) => [
       ...prev,
-      { role: "user", content: trimmed },
-      { role: "assistant", content: "hello world" },
+      { id: userId, role: "user", content: trimmed, status: "done" },
+      { id: assistantId, role: "assistant", content: "", status: "loading" },
     ])
     setMessage("")
+
+    clearTypingTimeouts()
+    const loadingDelay = window.setTimeout(() => {
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === assistantId ? { ...entry, status: "typing" } : entry
+        )
+      )
+
+      const typeNext = (index: number) => {
+        setChatHistory((prev) =>
+          prev.map((entry) =>
+            entry.id === assistantId
+              ? { ...entry, content: loremText.slice(0, index), status: "typing" }
+              : entry
+          )
+        )
+
+        if (index <= loremText.length) {
+          const nextTimeout = window.setTimeout(() => typeNext(index + 1), 18)
+          typingTimeoutsRef.current.push(nextTimeout)
+        } else {
+          setChatHistory((prev) =>
+            prev.map((entry) =>
+              entry.id === assistantId ? { ...entry, status: "done" } : entry
+            )
+          )
+        }
+      }
+
+      typeNext(1)
+    }, 1600)
+    typingTimeoutsRef.current.push(loadingDelay)
   }
 
   useEffect(() => {
@@ -502,6 +558,20 @@ export default function ChatPage() {
   useEffect(() => {
     handleTextareaInput()
   }, [message])
+
+  useEffect(() => {
+    return () => {
+      clearTypingTimeouts()
+    }
+  }, [])
+
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight
+    })
+  }, [chatHistory])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -1505,36 +1575,44 @@ export default function ChatPage() {
       </Sidebar>
 
       <SidebarInset>
-        <SiteHeader title={headerTitle} />
+        <SiteHeader title={headerTitle} showSidebarTrigger={false} />
         <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
           <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
             <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none">
               <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto" ref={messagesContainerRef}>
                   {chatHistory.length === 0 ? (
                     <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
                       Commencez une conversation pour voir vos messages ici.
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {chatHistory.map((entry, index) => (
+                      {chatHistory.map((entry) => {
+                        const isLoading = entry.status === "loading"
+                        const isAssistant = entry.role === "assistant"
+                        return (
                         <div
-                          key={`${entry.role}-${index}`}
-                          className={`flex ${
-                            entry.role === "assistant" ? "justify-start" : "justify-end"
-                          }`}
+                          key={entry.id}
+                          className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
                         >
                           <div
-                            className={`max-w-[95%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
-                              entry.role === "assistant"
-                                ? "bg-muted text-foreground"
-                                : "bg-black text-white"
+                            className={`chat-message max-w-[95%] md:max-w-[720px] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                              isAssistant ? "bg-muted text-foreground" : "bg-black text-white"
                             }`}
                           >
-                            {entry.content}
+                            {isLoading ? (
+                              <span className="chat-loading-dots inline-flex gap-1">
+                                <span>•</span>
+                                <span>•</span>
+                                <span>•</span>
+                              </span>
+                            ) : (
+                              entry.content
+                            )}
                           </div>
                         </div>
-                      ))}
+                      )
+                      })}
                     </div>
                   )}
                 </div>
@@ -1605,7 +1683,7 @@ export default function ChatPage() {
                           onClick={() => setOpen(false)}
                           aria-hidden="true"
                         />
-                        <div className="border-border bg-background absolute left-0 top-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
+                        <div className="border-border bg-background absolute left-0 bottom-[calc(100%+8px)] z-20 w-64 rounded-xl border shadow-lg">
                           <ul className="flex flex-col divide-y divide-border/70">
                             {models.map((model) => (
                               <li key={model.value}>
@@ -2159,6 +2237,35 @@ export default function ChatPage() {
           </Card>
         </div>
       )}
+        <style jsx global>{`
+          @keyframes chat-pop {
+            0% {
+              opacity: 0;
+              transform: translateY(6px) scale(0.98);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+          .chat-message {
+            animation: chat-pop 0.18s ease-out;
+          }
+          @keyframes chat-loading {
+            0% {
+              opacity: 0.3;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0.3;
+            }
+          }
+          .chat-loading-dots {
+            animation: chat-loading 1.2s ease-in-out infinite;
+          }
+        `}</style>
       </SidebarInset>
     </SidebarProvider>
   )
