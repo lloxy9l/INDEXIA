@@ -225,6 +225,7 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messageIdRef = useRef(0)
   const typingTimeoutsRef = useRef<number[]>([])
+  const skipNextLoadForChatId = useRef<string | null>(null)
 
   const clearTypingTimeouts = () => {
     typingTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
@@ -345,19 +346,26 @@ export default function ChatPage() {
       }))
       await persistMessage(chatId, "assistant", finalContent)
     } catch (error) {
-      const fallback =
-        error instanceof Error ? error.message : "Réponse indisponible"
+      const rawMessage = error instanceof Error ? error.message : "Réponse indisponible"
+      const fallback = /fetch failed/i.test(rawMessage)
+        ? "Impossible de joindre le modèle. Vérifiez qu'il est bien lancé localement."
+        : rawMessage
       setChatHistory((prev) =>
         prev.map((entry) =>
           entry.id === assistantId
             ? {
                 ...entry,
-                content: `Erreur: ${fallback}`,
+                content: fallback,
                 status: "done",
               }
             : entry
         )
       )
+      try {
+        await persistMessage(chatId, "assistant", fallback)
+      } catch (persistError) {
+        console.error("Impossible d'enregistrer le message d'erreur", persistError)
+      }
       setChatError(fallback)
     }
   }
@@ -408,25 +416,33 @@ export default function ChatPage() {
     }))
   }
 
-  const handleNewChat = async () => {
-    if (isCreatingChat) return
-    setIsCreatingChat(true)
+  const createChat = async (
+    options: { title?: string; projectId?: string | null; silent?: boolean } = {}
+  ) => {
+    const { title, projectId, silent } = options
+    if (!silent && isCreatingChat) return null
+    if (!silent) setIsCreatingChat(true)
     setChatError("")
 
+    const trimmedTitle = title?.trim()
     const unassignedCount = chats.filter((chat) => !chat.projectId).length
-    const fallbackTitle = `Nouveau chat ${unassignedCount + 1}`
+    const fallbackTitle =
+      trimmedTitle && trimmedTitle.length > 0
+        ? trimmedTitle
+        : `Nouveau chat ${unassignedCount + 1}`
+    const targetProjectId = projectId ?? selectedProjectId ?? null
 
     try {
       const res = await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: fallbackTitle }),
+        body: JSON.stringify({ title: fallbackTitle, projectId: targetProjectId }),
       })
       const payload = await res.json().catch(() => ({}))
 
       if (res.status === 401) {
         router.replace("/login")
-        return
+        return null
       }
 
       if (!res.ok) {
@@ -436,6 +452,7 @@ export default function ChatPage() {
       const created = payload?.chat as ChatRecord | undefined
 
       if (created) {
+        skipNextLoadForChatId.current = created.id
         setChats((prev) => {
           const next = [created, ...prev.filter((chat) => chat.id !== created.id)]
           return next.sort(
@@ -444,21 +461,32 @@ export default function ChatPage() {
         })
         setProjects((prev) =>
           prev.map((project) =>
-            project.id === selectedProjectId
+            project.id === created.projectId
               ? { ...project, updatedAt: created.updatedAt }
               : project
           )
         )
+        setSelectedProjectId(created.projectId)
         setSelectedChatId(created.id)
       }
+
+      return created ?? null
     } catch (error) {
       console.error("Erreur lors de la création du chat", error)
       const message =
         error instanceof Error ? error.message : "Impossible de créer un nouveau chat"
       setChatError(message)
+      return null
     } finally {
-      setIsCreatingChat(false)
+      if (!silent) {
+        setIsCreatingChat(false)
+      }
     }
+  }
+
+  const handleNewChat = async () => {
+    if (isCreatingChat) return
+    await createChat({ projectId: selectedProjectId })
   }
 
   const openProjectModal = () => {
@@ -777,38 +805,51 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     const trimmed = message.trim()
     if (!trimmed || isSending) return
-    if (!selectedChatId) {
-      setChatError("Sélectionnez ou créez un chat avant d'envoyer un message.")
-      return
-    }
-    const userId = `user-${Date.now()}-${messageIdRef.current++}`
-    const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
-    const userEntry = {
-      id: userId,
-      role: "user" as const,
-      content: trimmed,
-      status: "done",
-    }
-    const assistantEntry = {
-      id: assistantId,
-      role: "assistant" as const,
-      content: "",
-      status: "loading",
-    }
-    const historyMessages = mapToOllamaMessages(chatHistory)
-    const payloadMessages = [
-      ...historyMessages,
-      { role: "user" as const, content: trimmed },
-    ]
-
-    setChatHistory((prev) => [...prev, userEntry, assistantEntry])
-    setMessage("")
-    clearTypingTimeouts()
-    setChatError("")
-    setIsSending(true)
     try {
-      await persistMessage(selectedChatId, "user", trimmed)
-      await requestAssistantReply(payloadMessages, assistantId, selectedChatId)
+      setIsSending(true)
+      setChatError("")
+
+      let chatId = selectedChatId
+      if (!chatId) {
+        const created = await createChat({
+          projectId: selectedProjectId,
+          silent: true,
+        })
+        if (!created) {
+          return
+        }
+        chatId = created.id
+      }
+
+      if (!chatId) {
+        return
+      }
+
+      const userId = `user-${Date.now()}-${messageIdRef.current++}`
+      const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
+      const userEntry = {
+        id: userId,
+        role: "user" as const,
+        content: trimmed,
+        status: "done",
+      }
+      const assistantEntry = {
+        id: assistantId,
+        role: "assistant" as const,
+        content: "",
+        status: "loading",
+      }
+      const historyMessages = mapToOllamaMessages(chatHistory)
+      const payloadMessages = [
+        ...historyMessages,
+        { role: "user" as const, content: trimmed },
+      ]
+
+      setChatHistory((prev) => [...prev, userEntry, assistantEntry])
+      setMessage("")
+      clearTypingTimeouts()
+      await persistMessage(chatId, "user", trimmed)
+      await requestAssistantReply(payloadMessages, assistantId, chatId)
     } finally {
       setIsSending(false)
     }
@@ -1292,6 +1333,10 @@ export default function ChatPage() {
       setChatHistory([])
       return
     }
+    if (skipNextLoadForChatId.current === selectedChatId) {
+      skipNextLoadForChatId.current = null
+      return
+    }
     clearTypingTimeouts()
     let active = true
     const loadMessages = async () => {
@@ -1582,10 +1627,9 @@ export default function ChatPage() {
                 </div>
               )
             })}
-            {!chatError && unassignedChats.length === 0 && (
+            {unassignedChats.length === 0 && (
               <span className="text-xs text-muted-foreground px-1">Aucun chat pour le moment</span>
             )}
-            {chatError && <span className="text-xs text-red-500">{chatError}</span>}
           </div>
 
           <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
@@ -1840,7 +1884,7 @@ export default function ChatPage() {
                           </div>
                         )
                       })}
-                      {!chatError && visibleChats.length === 0 && (
+                      {visibleChats.length === 0 && (
                         <span className="text-xs text-muted-foreground px-1">
                           {searchTerm
                             ? "Aucun chat ne correspond à la recherche"
