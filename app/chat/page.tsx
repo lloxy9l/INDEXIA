@@ -158,6 +158,7 @@ export default function ChatPage() {
       status?: "loading" | "typing" | "done"
     }[]
   >([])
+  const [loadingMessages, setLoadingMessages] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<
@@ -237,9 +238,26 @@ export default function ChatPage() {
       .filter((entry) => entry.content && entry.content.trim().length > 0)
       .map((entry) => ({ role: entry.role, content: entry.content }))
 
+  const persistMessage = async (
+    chatId: string,
+    role: "user" | "assistant",
+    content: string
+  ) => {
+    try {
+      await fetch("/api/chat-messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId, role, content }),
+      })
+    } catch (error) {
+      console.error("Impossible d'enregistrer le message", error)
+    }
+  }
+
   const requestAssistantReply = async (
     messages: { role: "user" | "assistant"; content: string }[],
-    assistantId: string
+    assistantId: string,
+    chatId: string
   ) => {
     type SimpleEntry = {
       id: string
@@ -319,11 +337,13 @@ export default function ChatPage() {
       }
 
       // Safeguard: ensure final status/content are set
+      const finalContent = acc || "Pas de réponse"
       updateAssistant((entry) => ({
         ...entry,
-        content: acc || entry.content || "Pas de réponse",
+        content: finalContent,
         status: "done",
       }))
+      await persistMessage(chatId, "assistant", finalContent)
     } catch (error) {
       const fallback =
         error instanceof Error ? error.message : "Réponse indisponible"
@@ -342,7 +362,11 @@ export default function ChatPage() {
     }
   }
 
-  const startAssistantResponse = (assistantId: string) => {
+  const startAssistantResponse = (assistantId: string, chatId?: string | null) => {
+    if (!chatId) {
+      setChatError("Sélectionnez ou créez un chat avant d'envoyer un message.")
+      return
+    }
     clearTypingTimeouts()
     setChatHistory((prev) =>
       prev.map((entry) =>
@@ -354,7 +378,7 @@ export default function ChatPage() {
     const messages = mapToOllamaMessages(
       chatHistory.filter((entry) => entry.id !== assistantId)
     )
-    requestAssistantReply(messages, assistantId)
+    requestAssistantReply(messages, assistantId, chatId)
   }
 
   const handleCopy = async (content: string) => {
@@ -753,6 +777,10 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     const trimmed = message.trim()
     if (!trimmed || isSending) return
+    if (!selectedChatId) {
+      setChatError("Sélectionnez ou créez un chat avant d'envoyer un message.")
+      return
+    }
     const userId = `user-${Date.now()}-${messageIdRef.current++}`
     const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
     const userEntry = {
@@ -779,7 +807,8 @@ export default function ChatPage() {
     setChatError("")
     setIsSending(true)
     try {
-      await requestAssistantReply(payloadMessages, assistantId)
+      await persistMessage(selectedChatId, "user", trimmed)
+      await requestAssistantReply(payloadMessages, assistantId, selectedChatId)
     } finally {
       setIsSending(false)
     }
@@ -1257,6 +1286,54 @@ export default function ChatPage() {
       setSelectedChatId(projectChats[0].id)
     }
   }, [chats, selectedProjectId, selectedChatId])
+
+  useEffect(() => {
+    if (!selectedChatId) {
+      setChatHistory([])
+      return
+    }
+    clearTypingTimeouts()
+    let active = true
+    const loadMessages = async () => {
+      setLoadingMessages(true)
+      setChatError("")
+      try {
+        const res = await fetch(`/api/chat-messages?chatId=${selectedChatId}`)
+        const payload = await res.json().catch(() => ({}))
+        if (!active) return
+        if (res.status === 401) {
+          router.replace("/login")
+          return
+        }
+        if (!res.ok) {
+          throw new Error(
+            payload?.error ??
+              `Impossible de charger les messages (statut ${res.status})`
+          )
+        }
+        const messages = Array.isArray(payload?.messages) ? payload.messages : []
+        setChatHistory(
+          messages.map((m: any) => ({
+            id: m.id ?? `${m.role}-${m.createdAt ?? Math.random()}`,
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: typeof m.content === "string" ? m.content : "",
+            status: "done",
+          }))
+        )
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : "Impossible de charger les messages"
+        setChatError(msg)
+      } finally {
+        if (active) setLoadingMessages(false)
+      }
+    }
+
+    loadMessages()
+    return () => {
+      active = false
+    }
+  }, [router, selectedChatId])
 
   const getFileIcon = (filename: string) => {
     const ext = filename.split(".").pop()?.toLowerCase()
@@ -1866,7 +1943,7 @@ export default function ChatPage() {
                                 <button
                                   type="button"
                                   className="hover:text-foreground rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50"
-                                  onClick={() => startAssistantResponse(entry.id)}
+                                  onClick={() => startAssistantResponse(entry.id, selectedChatId)}
                                   disabled={isDisabled}
                                 >
                                   Regenerer

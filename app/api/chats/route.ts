@@ -16,6 +16,7 @@ import {
   sortChatsByRecent,
   writeChats,
 } from "@/lib/chats"
+import { readChatMessages, writeChatMessages } from "@/lib/chat-messages"
 import { projectsForUser, readProjects, writeProjects } from "@/lib/projects"
 
 async function getAuthenticatedUser():
@@ -85,7 +86,11 @@ export async function POST(request: Request) {
         ? body.title
         : undefined
 
-    const [chats, projects] = await Promise.all([readChats(), readProjects()])
+    const [chats, projects, messages] = await Promise.all([
+      readChats(),
+      readProjects(),
+      readChatMessages(),
+    ])
     const userProjects = projectsForUser(projects, authenticated.user.id!)
     const targetProjectId = userProjects.find((p) => p.id === projectId)?.id ?? null
 
@@ -140,7 +145,11 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const [chats, projects] = await Promise.all([readChats(), readProjects()])
+    const [chats, projects, messages] = await Promise.all([
+      readChats(),
+      readProjects(),
+      readChatMessages(),
+    ])
     const existing = chats.find((chat) => chat.id === chatId)
     if (!existing || existing.userId !== authenticated.user.id) {
       return NextResponse.json({ error: "Chat introuvable" }, { status: 404 })
@@ -192,7 +201,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "chatId requis" }, { status: 400 })
     }
 
-    const [chats, projects] = await Promise.all([readChats(), readProjects()])
+    const [chats, projects, messages] = await Promise.all([
+      readChats(),
+      readProjects(),
+      readChatMessages(),
+    ])
     const target = chats.find((chat) => chat.id === chatId)
 
     if (!target || target.userId !== authenticated.user.id) {
@@ -200,6 +213,7 @@ export async function DELETE(request: Request) {
     }
 
     const nextChats = chats.filter((chat) => chat.id !== chatId)
+    const nextMessages = messages.filter((message) => message.chatId !== chatId)
     const now = new Date().toISOString()
     const nextProjects = projects.map((project) =>
       target.projectId && project.id === target.projectId
@@ -207,7 +221,11 @@ export async function DELETE(request: Request) {
         : project
     )
 
-    await Promise.all([writeChats(nextChats), writeProjects(nextProjects)])
+    await Promise.all([
+      writeChats(nextChats),
+      writeProjects(nextProjects),
+      writeChatMessages(nextMessages),
+    ])
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
