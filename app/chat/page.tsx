@@ -452,7 +452,11 @@ export default function ChatPage() {
       const created = payload?.chat as ChatRecord | undefined
 
       if (created) {
-        skipNextLoadForChatId.current = created.id
+        if (silent) {
+          skipNextLoadForChatId.current = created.id
+        } else {
+          skipNextLoadForChatId.current = null
+        }
         setChats((prev) => {
           const next = [created, ...prev.filter((chat) => chat.id !== created.id)]
           return next.sort(
@@ -1340,6 +1344,7 @@ export default function ChatPage() {
     clearTypingTimeouts()
     let active = true
     const loadMessages = async () => {
+      setChatHistory([])
       setLoadingMessages(true)
       setChatError("")
       try {
