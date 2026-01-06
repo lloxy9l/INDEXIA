@@ -149,6 +149,7 @@ export default function ChatPage() {
   ]
   const [selectedModel, setSelectedModel] = useState(models[0])
   const [open, setOpen] = useState(false)
+  const [ragEnabled, setRagEnabled] = useState(false)
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState<
     {
@@ -2135,6 +2136,34 @@ export default function ChatPage() {
                         </div>
                       </>
                     )}
+                  </div>
+                  <div className="ml-2 flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={ragEnabled}
+                        onClick={() => setRagEnabled((prev) => !prev)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full border transition ${
+                          ragEnabled
+                            ? "border-emerald-300 bg-emerald-400/70"
+                            : "border-border bg-muted"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                            ragEnabled ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                        <span className="sr-only">Activer le mode RAG</span>
+                      </button>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        RAG
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground hidden md:inline">
+                      Recherche avant r&eacute;ponse
+                    </span>
                   </div>
                   <Button
                     size="icon"

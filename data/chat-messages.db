@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "a41b843a-fe71-4f02-bd2d-750665bcf32b",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "test",
+    "createdAt": "2026-01-06T14:28:39.776Z"
+  }
+]
