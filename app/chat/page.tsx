@@ -119,6 +119,9 @@ export default function ChatPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteError, setDeleteError] = useState("")
+  const [feedbackById, setFeedbackById] = useState<
+    Record<string, "up" | "down" | null>
+  >({})
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -129,6 +132,86 @@ export default function ChatPage() {
   const clearTypingTimeouts = () => {
     typingTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
     typingTimeoutsRef.current = []
+  }
+
+  const pickLorem = () => {
+    const loremVariants = [
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
+    ]
+    return loremVariants[Math.floor(Math.random() * loremVariants.length)]
+  }
+
+  const startAssistantResponse = (assistantId: string) => {
+    const loremText = pickLorem()
+    clearTypingTimeouts()
+    setChatHistory((prev) =>
+      prev.map((entry) =>
+        entry.id === assistantId
+          ? { ...entry, content: "", status: "loading" }
+          : entry
+      )
+    )
+    const loadingDelay = window.setTimeout(() => {
+      setChatHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === assistantId ? { ...entry, status: "typing" } : entry
+        )
+      )
+
+      const typeNext = (index: number) => {
+        setChatHistory((prev) =>
+          prev.map((entry) =>
+            entry.id === assistantId
+              ? { ...entry, content: loremText.slice(0, index), status: "typing" }
+              : entry
+          )
+        )
+
+        if (index <= loremText.length) {
+          const nextTimeout = window.setTimeout(() => typeNext(index + 1), 18)
+          typingTimeoutsRef.current.push(nextTimeout)
+        } else {
+          setChatHistory((prev) =>
+            prev.map((entry) =>
+              entry.id === assistantId ? { ...entry, status: "done" } : entry
+            )
+          )
+        }
+      }
+
+      typeNext(1)
+    }, 1600)
+    typingTimeoutsRef.current.push(loadingDelay)
+  }
+
+  const handleCopy = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+    } catch (error) {
+      console.error("Impossible de copier le message", error)
+    }
+  }
+
+  const handleShare = async (content: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: content })
+      } else {
+        await handleCopy(content)
+      }
+    } catch (error) {
+      console.error("Impossible de partager le message", error)
+    }
+  }
+
+  const handleFeedback = (id: string, value: "up" | "down") => {
+    setFeedbackById((prev) => ({
+      ...prev,
+      [id]: prev[id] === value ? null : value,
+    }))
   }
 
   const handleNewChat = async () => {
@@ -502,53 +585,13 @@ export default function ChatPage() {
     if (!trimmed) return
     const userId = `user-${Date.now()}-${messageIdRef.current++}`
     const assistantId = `assistant-${Date.now()}-${messageIdRef.current++}`
-    const loremVariants = [
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-    ]
-    const loremText =
-      loremVariants[Math.floor(Math.random() * loremVariants.length)]
     setChatHistory((prev) => [
       ...prev,
       { id: userId, role: "user", content: trimmed, status: "done" },
       { id: assistantId, role: "assistant", content: "", status: "loading" },
     ])
     setMessage("")
-
-    clearTypingTimeouts()
-    const loadingDelay = window.setTimeout(() => {
-      setChatHistory((prev) =>
-        prev.map((entry) =>
-          entry.id === assistantId ? { ...entry, status: "typing" } : entry
-        )
-      )
-
-      const typeNext = (index: number) => {
-        setChatHistory((prev) =>
-          prev.map((entry) =>
-            entry.id === assistantId
-              ? { ...entry, content: loremText.slice(0, index), status: "typing" }
-              : entry
-          )
-        )
-
-        if (index <= loremText.length) {
-          const nextTimeout = window.setTimeout(() => typeNext(index + 1), 18)
-          typingTimeoutsRef.current.push(nextTimeout)
-        } else {
-          setChatHistory((prev) =>
-            prev.map((entry) =>
-              entry.id === assistantId ? { ...entry, status: "done" } : entry
-            )
-          )
-        }
-      }
-
-      typeNext(1)
-    }, 1600)
-    typingTimeoutsRef.current.push(loadingDelay)
+    startAssistantResponse(assistantId)
   }
 
   useEffect(() => {
@@ -1576,7 +1619,7 @@ export default function ChatPage() {
 
       <SidebarInset>
         <SiteHeader title={headerTitle} showSidebarTrigger={false} />
-        <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 px-4 pb-8 pt-4 lg:px-8">
+        <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 overflow-hidden px-4 pb-8 pt-4 lg:px-8">
           <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
             <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none">
               <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
@@ -1590,25 +1633,83 @@ export default function ChatPage() {
                       {chatHistory.map((entry) => {
                         const isLoading = entry.status === "loading"
                         const isAssistant = entry.role === "assistant"
+                        const isDisabled = isLoading || entry.status === "typing"
+                        const feedback = feedbackById[entry.id] ?? null
                         return (
                         <div
                           key={entry.id}
                           className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
                         >
-                          <div
-                            className={`chat-message max-w-[95%] md:max-w-[720px] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
-                              isAssistant ? "bg-muted text-foreground" : "bg-black text-white"
-                            }`}
-                          >
-                            {isLoading ? (
-                              <span className="chat-loading-dots inline-flex gap-1">
-                                <span>•</span>
-                                <span>•</span>
-                                <span>•</span>
-                              </span>
-                            ) : (
-                              entry.content
-                            )}
+                          <div className="flex max-w-[95%] md:max-w-[720px] flex-col">
+                            <div
+                              className={`chat-message rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                                isAssistant
+                                  ? "bg-muted text-foreground"
+                                  : "bg-black text-white"
+                              }`}
+                            >
+                              {isLoading ? (
+                                <span className="chat-loading-dots inline-flex gap-1">
+                                  <span>•</span>
+                                  <span>•</span>
+                                  <span>•</span>
+                                </span>
+                              ) : (
+                                entry.content
+                              )}
+                            </div>
+                            {isAssistant ? (
+                              <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium">
+                                <button
+                                  type="button"
+                                  className="hover:text-foreground rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50"
+                                  onClick={() => handleCopy(entry.content)}
+                                  disabled={isDisabled || !entry.content}
+                                >
+                                  Copier
+                                </button>
+                                <button
+                                  type="button"
+                                  className="hover:text-foreground rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50"
+                                  onClick={() => startAssistantResponse(entry.id)}
+                                  disabled={isDisabled}
+                                >
+                                  Regenerer
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50 ${
+                                    feedback === "up"
+                                      ? "text-emerald-600 border-emerald-200"
+                                      : "hover:text-foreground"
+                                  }`}
+                                  onClick={() => handleFeedback(entry.id, "up")}
+                                  disabled={isDisabled}
+                                >
+                                  Utile
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50 ${
+                                    feedback === "down"
+                                      ? "text-rose-600 border-rose-200"
+                                      : "hover:text-foreground"
+                                  }`}
+                                  onClick={() => handleFeedback(entry.id, "down")}
+                                  disabled={isDisabled}
+                                >
+                                  Pas utile
+                                </button>
+                                <button
+                                  type="button"
+                                  className="hover:text-foreground rounded-full border border-border/70 px-2 py-1 transition disabled:opacity-50"
+                                  onClick={() => handleShare(entry.content)}
+                                  disabled={isDisabled || !entry.content}
+                                >
+                                  Partager
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )
