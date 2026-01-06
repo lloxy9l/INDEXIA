@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef, useState } from "react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
@@ -39,6 +39,102 @@ type SpeechRecognitionInstance = {
   onresult: ((event: SpeechRecognitionResultEvent) => void) | null
   start: () => void
   stop: () => void
+}
+
+const renderInlineMarkdown = (text: string) => {
+  const elements: React.ReactNode[] = []
+  let remaining = text
+  let keyIndex = 0
+
+  const patterns = [
+    { type: "bold", regex: /\*\*(.+?)\*\*/ },
+    { type: "code", regex: /`([^`]+?)`/ },
+    { type: "italic", regex: /\*(?!\s)([^*]+?)\*(?!\s)/ },
+    { type: "link", regex: /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/ },
+  ] as const
+
+  while (remaining.length > 0) {
+    let earliest:
+      | { type: (typeof patterns)[number]["type"]; match: RegExpMatchArray }
+      | null = null
+
+    for (const pattern of patterns) {
+      const match = remaining.match(pattern.regex)
+      if (!match || match.index === undefined) continue
+      if (!earliest || match.index < earliest.match.index) {
+        earliest = { type: pattern.type, match }
+      }
+    }
+
+    if (!earliest) {
+      elements.push(remaining)
+      break
+    }
+
+    if (earliest.match.index > 0) {
+      elements.push(remaining.slice(0, earliest.match.index))
+    }
+
+    const [fullMatch, partOne, partTwo] = earliest.match
+    if (earliest.type === "bold") {
+      elements.push(<strong key={`bold-${keyIndex++}`}>{partOne}</strong>)
+    } else if (earliest.type === "italic") {
+      elements.push(<em key={`italic-${keyIndex++}`}>{partOne}</em>)
+    } else if (earliest.type === "code") {
+      elements.push(
+        <code key={`code-${keyIndex++}`} className="chat-inline-code">
+          {partOne}
+        </code>
+      )
+    } else if (earliest.type === "link") {
+      elements.push(
+        <a
+          key={`link-${keyIndex++}`}
+          href={partTwo}
+          target="_blank"
+          rel="noreferrer"
+          className="chat-link"
+        >
+          {partOne}
+        </a>
+      )
+    }
+
+    remaining = remaining.slice(earliest.match.index + fullMatch.length)
+  }
+
+  return elements
+}
+
+const renderMarkdown = (content: string) => {
+  const blocks = content.split(/\n{2,}/)
+  return blocks.map((block, blockIndex) => {
+    const lines = block.split("\n")
+    const isList = lines.every((line) => line.trim().startsWith("- "))
+
+    if (isList) {
+      return (
+        <ul key={`list-${blockIndex}`} className="chat-list">
+          {lines.map((line, lineIndex) => (
+            <li key={`list-item-${blockIndex}-${lineIndex}`}>
+              {renderInlineMarkdown(line.replace(/^\s*-\s*/, ""))}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    return (
+      <p key={`para-${blockIndex}`} className="chat-paragraph">
+        {lines.map((line, lineIndex) => (
+          <Fragment key={`line-${blockIndex}-${lineIndex}`}>
+            {renderInlineMarkdown(line)}
+            {lineIndex < lines.length - 1 ? <br /> : null}
+          </Fragment>
+        ))}
+      </p>
+    )
+  })
 }
 
 export default function ChatPage() {
@@ -1749,6 +1845,10 @@ export default function ChatPage() {
                                   <span>•</span>
                                   <span>•</span>
                                 </span>
+                              ) : isAssistant ? (
+                                <div className="chat-markdown">
+                                  {renderMarkdown(entry.content)}
+                                </div>
                               ) : (
                                 entry.content
                               )}
@@ -2460,6 +2560,34 @@ export default function ChatPage() {
           }
           .chat-loading-dots {
             animation: chat-loading 1.2s ease-in-out infinite;
+          }
+          .chat-markdown {
+            line-height: 1.55;
+          }
+          .chat-paragraph {
+            margin: 0;
+          }
+          .chat-paragraph + .chat-paragraph {
+            margin-top: 0.5rem;
+          }
+          .chat-inline-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+              "Liberation Mono", "Courier New", monospace;
+            font-size: 0.85em;
+            background: rgba(0, 0, 0, 0.08);
+            padding: 0.1rem 0.35rem;
+            border-radius: 0.4rem;
+          }
+          .chat-link {
+            text-decoration: underline;
+            text-underline-offset: 2px;
+          }
+          .chat-list {
+            margin: 0.4rem 0 0.6rem 1.2rem;
+            list-style: disc;
+          }
+          .chat-list li {
+            margin: 0.15rem 0;
           }
         `}</style>
       </SidebarInset>
