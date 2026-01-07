@@ -579,6 +579,22 @@ function estimateChunksFromSize(size: string) {
   return Math.max(1, Math.round(bytes / bytesPerChunk))
 }
 
+function estimateEmbeddingsSize(chunks: number | null, dim: number) {
+  if (!chunks) return null
+  return formatFileSize(chunks * dim * 4)
+}
+
+function formatRagField(
+  status: string,
+  value: string | number | null,
+  fallback = "N/A"
+) {
+  if (status === "Indexé") return value ?? fallback
+  if (status === "En cours") return "En cours"
+  if (status === "Erreur") return "Erreur"
+  return fallback
+}
+
 function formatDashboardDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -861,6 +877,34 @@ export default function Page() {
       rebuilds: inProgressDocs + errorDocs,
     }
   }, [documentsFs, inProgressDocs, errorDocs])
+  const ragMetadata = React.useMemo(() => {
+    if (!selectedDoc) {
+      return {
+        chunks: "N/A",
+        embeddingsSize: "N/A",
+        vectorStore: "N/A",
+        indexedAt: "—",
+      }
+    }
+
+    const status = selectedDoc.status
+    const chunks = estimateChunksFromSize(selectedDoc.size)
+    const embeddingsSize = estimateEmbeddingsSize(chunks, indexSettings.dim)
+
+    return {
+      chunks: formatRagField(
+        status,
+        typeof chunks === "number" ? chunks.toString() : null
+      ),
+      embeddingsSize: formatRagField(status, embeddingsSize),
+      vectorStore: formatRagField(status, "FAISS"),
+      indexedAt: formatRagField(
+        status,
+        formatDashboardDate(selectedDoc.uploadedAt),
+        "—"
+      ),
+    }
+  }, [selectedDoc])
 
   const applyAdminToggle = React.useCallback((id: string, nextIsAdmin: boolean) => {
     setUsersState((prev) =>
@@ -2031,13 +2075,13 @@ export default function Page() {
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-3 text-sm">
                               <div className="font-medium">Chunks générés</div>
-                              <div>152</div>
+                              <div>{ragMetadata.chunks}</div>
                               <div className="font-medium">Taille embeddings</div>
-                              <div>12.4 MB</div>
+                              <div>{ragMetadata.embeddingsSize}</div>
                               <div className="font-medium">Vector store</div>
-                              <div>FAISS</div>
+                              <div>{ragMetadata.vectorStore}</div>
                               <div className="font-medium">Dernière indexation</div>
-                              <div>2025-11-26 12:45</div>
+                              <div>{ragMetadata.indexedAt}</div>
                             </CardContent>
                           </Card>
                         </div>
