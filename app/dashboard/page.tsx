@@ -353,20 +353,78 @@ const errorLogs = [
 
 const requestDetail = {
   question: "Procédure incident ?",
+  user: "Maxime",
+  datetime: "26/11/2025 13:12",
   model: "Llama 3",
-  pipeline: "RAG + rank",
-  params: "top_k=4, chunk_size=500, rerank=ON",
-  embedding: { tokens: 128, dim: 1536, preview: "[0.12, -0.04, 0.33, ...]" },
-  chunks: [
-    { score: 0.92, doc: "procédure_incident.pdf", preview: "En cas d’incident majeur…", id: "#1523" },
-    { score: 0.87, doc: "plan_continuite.pdf", preview: "Escalade vers N3 si…", id: "#1488" },
+  pipeline: "RAG + re-ranking",
+  params: {
+    topK: 4,
+    chunkSize: 500,
+    overlap: 50,
+    rerank: "ON",
+    totalTime: "458 ms",
+  },
+  embedding: {
+    text: "Procédure incident ?",
+    dim: 1536,
+    model: "mistral-embed",
+    norm: "12.08",
+    preview: "[0.12, -0.04, 0.33, ...]",
+  },
+  retrieval: [
+    {
+      rank: 1,
+      score: 0.92,
+      doc: "Procedure_Incident.pdf",
+      chunkId: "#152",
+      page: "p.3",
+      preview: "En cas d’incident critique…",
+    },
+    {
+      rank: 2,
+      score: 0.87,
+      doc: "Plan_Continuite.pdf",
+      chunkId: "#87",
+      page: "p.5",
+      preview: "Le service IT doit…",
+    },
   ],
-  prompt: "[Context]\nChunk 1: ...\nChunk 2: ...\n[Question]\nQuelle est la procédure…",
+  reranking: {
+    enabled: true,
+    before: [
+      { chunkId: "#152", rank: 2, score: 0.86 },
+      { chunkId: "#87", rank: 1, score: 0.89 },
+      { chunkId: "#41", rank: 3, score: 0.81 },
+    ],
+    after: [
+      { chunkId: "#152", rank: 1, score: 0.92 },
+      { chunkId: "#87", rank: 2, score: 0.87 },
+    ],
+    removed: [{ chunkId: "#41", reason: "Pertinence faible" }],
+  },
+  prompt: [
+    "SYSTEM:",
+    "Tu es un assistant qui répond uniquement à partir des sources fournies.",
+    "",
+    "CONTEXT:",
+    "[Chunk #152 - Procedure_Incident.pdf p.3]",
+    "En cas d’incident critique…",
+    "",
+    "[Chunk #87 - Plan_Continuite.pdf p.5]",
+    "Le service IT doit…",
+    "",
+    "QUESTION:",
+    "Quelle est la procédure en cas d’incident critique ?",
+  ].join("\n"),
   answer: {
     text: "Escalader vers N3 en <30min, notifier ITSM, prévenir SecOps.",
     time: "458 ms",
     tokens: 220,
-    sources: ["procédure_incident.pdf", "plan_continuite.pdf"],
+    sources: [
+      { doc: "Procedure_Incident.pdf", chunkId: "#152", page: "p.3" },
+      { doc: "Plan_Continuite.pdf", chunkId: "#87", page: "p.5" },
+    ],
+    quality: 4,
   },
 }
 
@@ -2312,23 +2370,61 @@ export default function Page() {
                       <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2">
                         <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                           <CardHeader>
-                            <CardTitle>Requête</CardTitle>
-                            <CardDescription>Paramètres RAG</CardDescription>
+                            <CardTitle>Informations générales</CardTitle>
+                            <CardDescription>Contexte de la requête</CardDescription>
                           </CardHeader>
                           <CardContent className="grid gap-2 text-sm">
-                            <div><span className="font-medium">Question :</span> {requestDetail.question}</div>
-                            <div><span className="font-medium">Modèle :</span> {requestDetail.model}</div>
-                            <div><span className="font-medium">Pipeline :</span> {requestDetail.pipeline}</div>
-                            <div><span className="font-medium">Paramètres :</span> {requestDetail.params}</div>
+                            <div>
+                              <span className="font-medium">Question :</span>{" "}
+                              {requestDetail.question}
+                            </div>
+                            <div>
+                              <span className="font-medium">Utilisateur :</span>{" "}
+                              {requestDetail.user}
+                            </div>
+                            <div>
+                              <span className="font-medium">Date / heure :</span>{" "}
+                              {requestDetail.datetime}
+                            </div>
+                            <div>
+                              <span className="font-medium">Modèle LLM :</span>{" "}
+                              {requestDetail.model}
+                            </div>
+                            <div>
+                              <span className="font-medium">Pipeline :</span>{" "}
+                              {requestDetail.pipeline}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-2 text-muted-foreground">
+                              <div>top_k : {requestDetail.params.topK}</div>
+                              <div>chunk_size : {requestDetail.params.chunkSize}</div>
+                              <div>overlap : {requestDetail.params.overlap}</div>
+                              <div>re-ranking : {requestDetail.params.rerank}</div>
+                              <div>Temps total : {requestDetail.params.totalTime}</div>
+                            </div>
                           </CardContent>
                         </Card>
                         <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                           <CardHeader>
-                            <CardTitle>Embedding question</CardTitle>
+                            <CardTitle>Embedding de la question</CardTitle>
+                            <CardDescription>Compréhension sémantique</CardDescription>
                           </CardHeader>
                           <CardContent className="grid gap-2 text-sm">
-                            <div>Tokens : {requestDetail.embedding.tokens}</div>
-                            <div>Dim : {requestDetail.embedding.dim}</div>
+                            <div>
+                              <span className="font-medium">Texte :</span>{" "}
+                              {requestDetail.embedding.text}
+                            </div>
+                            <div>
+                              <span className="font-medium">Dimension :</span>{" "}
+                              {requestDetail.embedding.dim}
+                            </div>
+                            <div>
+                              <span className="font-medium">Modèle :</span>{" "}
+                              {requestDetail.embedding.model}
+                            </div>
+                            <div>
+                              <span className="font-medium">Norme :</span>{" "}
+                              {requestDetail.embedding.norm}
+                            </div>
                             <div className="break-words text-xs text-muted-foreground">
                               Aperçu : {requestDetail.embedding.preview}
                             </div>
@@ -2337,36 +2433,84 @@ export default function Page() {
                       </div>
                       <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                         <CardHeader>
-                          <CardTitle>Chunks récupérés</CardTitle>
+                          <CardTitle>Résultats du retrieval</CardTitle>
+                          <CardDescription>Chunks récupérés avant génération</CardDescription>
                         </CardHeader>
                         <CardContent className="overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow>
+                                <TableHead>Rang</TableHead>
                                 <TableHead>Score</TableHead>
                                 <TableHead>Document</TableHead>
-                                <TableHead>Aperçu</TableHead>
                                 <TableHead>Chunk ID</TableHead>
+                                <TableHead>Page</TableHead>
+                                <TableHead>Aperçu</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {requestDetail.chunks.map((chunk) => (
-                                <TableRow key={chunk.id}>
+                              {requestDetail.retrieval.map((chunk) => (
+                                <TableRow key={chunk.chunkId}>
+                                  <TableCell>{chunk.rank}</TableCell>
                                   <TableCell>{chunk.score}</TableCell>
                                   <TableCell>{chunk.doc}</TableCell>
+                                  <TableCell>{chunk.chunkId}</TableCell>
+                                  <TableCell>{chunk.page}</TableCell>
                                   <TableCell className="max-w-md truncate">
                                     {chunk.preview}
                                   </TableCell>
-                                  <TableCell>{chunk.id}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                           </Table>
                         </CardContent>
                       </Card>
+                      {requestDetail.reranking.enabled ? (
+                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
+                          <CardHeader>
+                            <CardTitle>Re-ranking</CardTitle>
+                            <CardDescription>Comparaison avant / après</CardDescription>
+                          </CardHeader>
+                          <CardContent className="grid gap-4 @xl/main:grid-cols-3">
+                            <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
+                              <div className="font-medium">Ordre avant</div>
+                              <div className="mt-2 space-y-1 text-muted-foreground">
+                                {requestDetail.reranking.before.map((item) => (
+                                  <div key={item.chunkId}>
+                                    {item.chunkId} · rang {item.rank} · score {item.score}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
+                              <div className="font-medium">Ordre après</div>
+                              <div className="mt-2 space-y-1 text-muted-foreground">
+                                {requestDetail.reranking.after.map((item) => (
+                                  <div key={item.chunkId}>
+                                    {item.chunkId} · rang {item.rank} · score {item.score}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
+                              <div className="font-medium">Chunks supprimés</div>
+                              <div className="mt-2 space-y-1 text-muted-foreground">
+                                {requestDetail.reranking.removed.length
+                                  ? requestDetail.reranking.removed.map((item) => (
+                                      <div key={item.chunkId}>
+                                        {item.chunkId} · {item.reason}
+                                      </div>
+                                    ))
+                                  : "Aucun"}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ) : null}
                       <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                         <CardHeader>
-                          <CardTitle>Prompt final</CardTitle>
+                          <CardTitle>Prompt final envoyé au LLM</CardTitle>
+                          <CardDescription>Contexte + règles système</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">
@@ -2376,15 +2520,45 @@ export default function Page() {
                       </Card>
                       <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                         <CardHeader>
-                          <CardTitle>Réponse générée</CardTitle>
+                          <CardTitle>Réponse générée + sources</CardTitle>
+                          <CardDescription>Résultat final du modèle</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-2 text-sm">
+                        <CardContent className="grid gap-3 text-sm">
                           <div>{requestDetail.answer.text}</div>
                           <div className="text-muted-foreground">
-                            Temps : {requestDetail.answer.time} · Tokens : {requestDetail.answer.tokens}
+                            Temps : {requestDetail.answer.time} · Tokens :{" "}
+                            {requestDetail.answer.tokens}
                           </div>
                           <div className="text-muted-foreground">
-                            Sources : {requestDetail.answer.sources.join(", ")}
+                            Note qualité : {requestDetail.answer.quality}/5
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              Marquer comme bonne
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              Marquer comme mauvaise
+                            </Button>
+                          </div>
+                          <div className="overflow-x-auto pt-2">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Document</TableHead>
+                                  <TableHead>Chunk ID</TableHead>
+                                  <TableHead>Page</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {requestDetail.answer.sources.map((source) => (
+                                  <TableRow key={`${source.doc}-${source.chunkId}`}>
+                                    <TableCell>{source.doc}</TableCell>
+                                    <TableCell>{source.chunkId}</TableCell>
+                                    <TableCell>{source.page}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
                         </CardContent>
                       </Card>

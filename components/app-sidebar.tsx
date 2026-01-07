@@ -69,11 +69,6 @@ const data = {
       url: "#",
       icon: IconChartBar,
     },
-    {
-      title: "Debug RAG",
-      url: "#",
-      icon: IconSearch,
-    },
   ],
 }
 
