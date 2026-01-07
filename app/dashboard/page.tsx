@@ -1796,11 +1796,10 @@ export default function Page() {
                 <>
                   <div className="px-4 lg:px-6">
                     <Tabs value={docsTab} onValueChange={setDocsTab}>
-                      <TabsList className="grid w-full grid-cols-4">
+                      <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="list">Liste</TabsTrigger>
                         <TabsTrigger value="details">Détails</TabsTrigger>
                         <TabsTrigger value="upload">Upload</TabsTrigger>
-                        <TabsTrigger value="index">État de l’index</TabsTrigger>
                       </TabsList>
                       <TabsContent value="list" className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -2142,9 +2141,6 @@ export default function Page() {
                             </Button>
                           </CardContent>
                         </Card>
-                      </TabsContent>
-                      <TabsContent value="index" className="space-y-5">
-                        {indexView}
                       </TabsContent>
                     </Tabs>
                   </div>
