@@ -6,5 +6,53 @@
     "role": "user",
     "content": "test",
     "createdAt": "2026-01-06T14:28:39.776Z"
+  },
+  {
+    "id": "aedae9dc-75b9-4705-a5b2-9452ae5fe588",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "test",
+    "createdAt": "2026-01-07T08:12:37.453Z"
+  },
+  {
+    "id": "7272cbdd-9b70-4150-9ca8-48874b537d2c",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Impossible de joindre le modèle. Vérifiez qu'il est bien lancé localement.",
+    "createdAt": "2026-01-07T08:12:37.518Z"
+  },
+  {
+    "id": "944ee4a9-1a25-45ac-bebf-0e31d3ceac91",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "d",
+    "createdAt": "2026-01-07T08:12:39.136Z"
+  },
+  {
+    "id": "8aaab127-70c3-4c55-82d1-9bd57bd1d4b8",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Impossible de joindre le modèle. Vérifiez qu'il est bien lancé localement.",
+    "createdAt": "2026-01-07T08:12:39.169Z"
+  },
+  {
+    "id": "a9d808a0-c0a5-4468-a906-8013ce961843",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "d",
+    "createdAt": "2026-01-07T08:12:39.918Z"
+  },
+  {
+    "id": "fca9cad1-568d-4340-bc77-ac3989c435ac",
+    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Impossible de joindre le modèle. Vérifiez qu'il est bien lancé localement.",
+    "createdAt": "2026-01-07T08:12:39.945Z"
   }
 ]

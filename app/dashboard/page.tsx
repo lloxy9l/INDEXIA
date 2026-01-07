@@ -251,40 +251,6 @@ const documentChunks = [
   },
 ]
 
-const indexState = {
-  documents: 42,
-  chunks: 12580,
-  size: "46,2 MB",
-  lastRebuild: "26/11/2025 13:12",
-  lastAutoIndex: "26/11/2025 13:12",
-  embeddingDim: 1536,
-  rebuilds: 3,
-}
-
-const indexDocs = [
-  {
-    name: "Procedure_incident.pdf",
-    chunks: 178,
-    indexedAt: "20/11/2025",
-    embedding: "OK",
-    size: "1.2 MB",
-  },
-  {
-    name: "Charte_IT.docx",
-    chunks: 52,
-    indexedAt: "21/11/2025",
-    embedding: "OK",
-    size: "312 KB",
-  },
-  {
-    name: "Plan_Continuite.pdf",
-    chunks: 210,
-    indexedAt: "25/11/2025",
-    embedding: "OK",
-    size: "1.5 MB",
-  },
-]
-
 const indexChunks = [
   {
     id: "1253",
@@ -533,6 +499,28 @@ function formatFileSize(bytes: number | string) {
   return `${bytes} B`
 }
 
+function parseFileSizeToBytes(value: string) {
+  const match = value.match(/([\d.,]+)\s*(B|KB|MB|GB)/i)
+  if (!match) return null
+  const amount = Number.parseFloat(match[1].replace(",", "."))
+  if (!Number.isFinite(amount)) return null
+  const unit = match[2].toUpperCase()
+  const multipliers: Record<string, number> = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+  }
+  return amount * (multipliers[unit] ?? 1)
+}
+
+function estimateChunksFromSize(size: string) {
+  const bytes = parseFileSizeToBytes(size)
+  if (!bytes) return null
+  const bytesPerChunk = 12 * 1024
+  return Math.max(1, Math.round(bytes / bytesPerChunk))
+}
+
 function formatDashboardDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -761,9 +749,60 @@ export default function Page() {
     return !Number.isNaN(created) && created >= thirtyDaysAgo
   }).length
   const selectedDoc = documentsState.find((doc) => doc.id === selectedDocId)
+  const indexDocs = React.useMemo(
+    () =>
+      documentsFs.map((doc) => ({
+        id: doc.id,
+        name: doc.name,
+        status: doc.status,
+        chunks:
+          doc.status === "Indexé"
+            ? estimateChunksFromSize(doc.size) ?? "N/A"
+            : "N/A",
+        indexedAt: formatDashboardDate(doc.uploadedAt),
+        embedding:
+          doc.status === "Indexé"
+            ? "OK"
+            : doc.status === "En cours"
+              ? "En cours"
+              : doc.status === "Erreur"
+                ? "Erreur"
+                : "N/A",
+        size: doc.size,
+      })),
+    [documentsFs]
+  )
   const indexedDocs = documentsFs.filter((d) => d.status === "Indexé").length
   const inProgressDocs = documentsFs.filter((d) => d.status === "En cours").length
   const errorDocs = documentsFs.filter((d) => d.status === "Erreur").length
+  const indexStats = React.useMemo(() => {
+    const indexedList = documentsFs.filter((doc) => doc.status === "Indexé")
+    const totalChunks = indexedList.reduce((acc, doc) => {
+      const chunks = estimateChunksFromSize(doc.size)
+      return typeof chunks === "number" ? acc + chunks : acc
+    }, 0)
+    const totalBytes = indexedList.reduce((acc, doc) => {
+      const bytes = parseFileSizeToBytes(doc.size)
+      return typeof bytes === "number" ? acc + bytes : acc
+    }, 0)
+    const lastAutoIndexDate = indexedList.reduce<Date | null>((latest, doc) => {
+      const date = new Date(doc.uploadedAt)
+      if (Number.isNaN(date.getTime())) return latest
+      if (!latest || date > latest) return date
+      return latest
+    }, null)
+
+    return {
+      documents: indexedList.length,
+      chunks: totalChunks,
+      size: formatFileSize(totalBytes),
+      lastAutoIndex: lastAutoIndexDate
+        ? formatDashboardDate(lastAutoIndexDate.toISOString())
+        : "—",
+      embeddingDim: indexSettings.dim,
+      rebuilds: inProgressDocs + errorDocs,
+    }
+  }, [documentsFs, inProgressDocs, errorDocs])
 
   const applyAdminToggle = React.useCallback((id: string, nextIsAdmin: boolean) => {
     setUsersState((prev) =>
@@ -933,6 +972,62 @@ export default function Page() {
     },
     [selectedDocId]
   )
+  const reindexTimeouts = React.useRef<Record<string, number>>({})
+
+  React.useEffect(() => {
+    return () => {
+      Object.values(reindexTimeouts.current).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId)
+      })
+      reindexTimeouts.current = {}
+    }
+  }, [])
+
+  const focusDocument = React.useCallback(
+    (docId: string) => {
+      setSelectedDocId(docId)
+      setDocsTab("details")
+      setActiveSection("Documents")
+    },
+    [setDocsTab, setActiveSection]
+  )
+
+  const handleReindexDocument = React.useCallback(
+    (docId: string) => {
+      setDocumentsState((prev) =>
+        prev.map((doc) =>
+          doc.id === docId ? { ...doc, status: "En cours" } : doc
+        )
+      )
+      const existing = reindexTimeouts.current[docId]
+      if (existing) window.clearTimeout(existing)
+      reindexTimeouts.current[docId] = window.setTimeout(() => {
+        setDocumentsState((prev) =>
+          prev.map((doc) =>
+            doc.id === docId ? { ...doc, status: "Indexé" } : doc
+          )
+        )
+        delete reindexTimeouts.current[docId]
+      }, 1200)
+    },
+    [setDocumentsState]
+  )
+
+  const handleClearEmbeddings = React.useCallback(
+    (docId: string) => {
+      const existing = reindexTimeouts.current[docId]
+      if (existing) {
+        window.clearTimeout(existing)
+        delete reindexTimeouts.current[docId]
+      }
+      setDocumentsState((prev) =>
+        prev.map((doc) =>
+          doc.id === docId ? { ...doc, status: "Stocké" } : doc
+        )
+      )
+    },
+    [setDocumentsState]
+  )
 
   const indexView = (
     <div className="space-y-5">
@@ -941,7 +1036,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Docs indexés</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.documents}
+              {indexStats.documents}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -949,7 +1044,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Total chunks</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.chunks.toLocaleString("fr-FR")}
+              {indexStats.chunks.toLocaleString("fr-FR")}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -957,7 +1052,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Dim embeddings</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.embeddingDim}
+              {indexStats.embeddingDim}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -965,7 +1060,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Taille index</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.size}
+              {indexStats.size}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -973,7 +1068,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Dernière indexation auto</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.lastAutoIndex}
+              {indexStats.lastAutoIndex}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -981,7 +1076,7 @@ export default function Page() {
           <CardHeader>
             <CardDescription>Rebuilds</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums">
-              {indexState.rebuilds}
+              {indexStats.rebuilds}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -1006,7 +1101,7 @@ export default function Page() {
             </TableHeader>
             <TableBody>
               {indexDocs.map((doc) => (
-                <TableRow key={doc.name}>
+                <TableRow key={doc.id}>
                   <TableCell className="font-medium">{doc.name}</TableCell>
                   <TableCell>{doc.chunks}</TableCell>
                   <TableCell>{doc.indexedAt}</TableCell>
@@ -1019,26 +1114,40 @@ export default function Page() {
                     </Badge>
                   </TableCell>
                   <TableCell>{doc.size}</TableCell>
-                                    <TableCell className="space-x-2">
-                                      <Button size="sm" variant="outline">
-                                        Voir chunks
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        className="bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                      >
-                                        Re-indexer
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        className="bg-red-100 text-red-800 hover:bg-red-200"
-                                      >
-                                        Supprimer embeddings
-                                      </Button>
-                                      <Button size="sm" variant="ghost">
-                                        Voir texte
-                                      </Button>
-                                    </TableCell>
+                  <TableCell className="space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => focusDocument(doc.id)}
+                    >
+                      Voir chunks
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-blue-100 text-blue-800 hover:bg-blue-200"
+                      disabled={doc.status === "En cours"}
+                      onClick={() => handleReindexDocument(doc.id)}
+                    >
+                      {doc.status === "En cours" ? "Re-indexation..." : "Re-indexer"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-red-100 text-red-800 hover:bg-red-200"
+                      onClick={() => handleClearEmbeddings(doc.id)}
+                    >
+                      Supprimer embeddings
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <a
+                        href={`/api/documents/${encodeURIComponent(
+                          doc.id
+                        )}?name=${encodeURIComponent(doc.name)}`}
+                        download
+                      >
+                        Voir texte
+                      </a>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
