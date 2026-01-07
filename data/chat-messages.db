@@ -1,7 +1,23 @@
 [
   {
-    "id": "a41b843a-fe71-4f02-bd2d-750665bcf32b",
-    "chatId": "9ed4e229-4ee0-4873-98bf-b46562107740",
+    "id": "0c1913bf-2ff1-49d9-97cd-5513d7e0db6f",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "coucou",
+    "createdAt": "2026-01-06T15:41:49.398Z"
+  },
+  {
+    "id": "e37499f1-9986-48b3-9d39-4292dbbee0ee",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Le modèle \"qwen3:4b\" n'est pas disponible localement. Téléchargez-le avec \"ollama pull qwen3:4b\" puis réessayez.",
+    "createdAt": "2026-01-06T15:41:49.420Z"
+  },
+  {
+    "id": "5a9cae52-bf24-4748-8044-54418bfa5b21",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
     "content": "test",
