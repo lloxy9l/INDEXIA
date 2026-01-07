@@ -1,3 +1,5 @@
+import { appendOllamaRequest, createOllamaRequest } from "@/lib/ollama-requests"
+
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"
 
 const jsonHeaders = { "Content-Type": "application/json" }
@@ -20,11 +22,23 @@ const listLocalModels = async () => {
 }
 
 export async function POST(req: Request) {
+  const startedAt = Date.now()
+  let requestedModel = "llama3.2"
+  let attemptedOllama = false
+  const queueLog = (status: "ok" | "error") => {
+    const record = createOllamaRequest({
+      status,
+      model: requestedModel,
+      durationMs: Date.now() - startedAt,
+    })
+    appendOllamaRequest(record).catch(() => {})
+  }
+
   try {
     const parsed = await req.json().catch(() => ({}))
     const url = new URL(req.url)
     const modelFromQuery = url.searchParams.get("model")
-    const requestedModel =
+    requestedModel =
       (typeof modelFromQuery === "string" && modelFromQuery.trim()) ||
       (typeof parsed?.model === "string" && parsed.model.trim()) ||
       "llama3.2"
@@ -47,6 +61,7 @@ export async function POST(req: Request) {
       )
     }
 
+    attemptedOllama = true
     const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,6 +69,7 @@ export async function POST(req: Request) {
     })
 
     if (!res.ok) {
+      queueLog("error")
       const errorText = await res.text()
       const baseError =
         res.status === 404 || /not found/i.test(errorText)
@@ -69,12 +85,14 @@ export async function POST(req: Request) {
     }
 
     if (!res.body) {
+      queueLog("error")
       return new Response(
         JSON.stringify({ error: "Flux Ollama manquant" }),
         { status: 500, headers: jsonHeaders }
       )
     }
 
+    queueLog("ok")
     // Renvoie le flux NDJSON tel quel pour un rendu temps-réel côté client.
     return new Response(res.body, {
       status: 200,
@@ -84,6 +102,7 @@ export async function POST(req: Request) {
       },
     })
   } catch (error) {
+    if (attemptedOllama) queueLog("error")
     const message =
       error instanceof Error ? error.message : "Erreur interne du serveur"
     return new Response(JSON.stringify({ error: message }), {

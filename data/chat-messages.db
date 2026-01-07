@@ -30,5 +30,85 @@
     "role": "assistant",
     "content": "C'est bien ! Comment allez-vous aujourd'hui ?",
     "createdAt": "2026-01-06T15:41:56.439Z"
+  },
+  {
+    "id": "26b6b933-97bd-4239-89ae-9cf24393e1eb",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "hey llama ca va ?",
+    "createdAt": "2026-01-07T08:11:37.947Z"
+  },
+  {
+    "id": "198cf251-38b4-4606-a633-344d46f0a4fd",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Ça va bien, merci ! Et toi, comment vas-tu ? As-tu besoin d'aide ou de conversation ? Je suis là pour t'écouter et t'aider si tu en as besoin !",
+    "createdAt": "2026-01-07T08:11:40.711Z"
+  },
+  {
+    "id": "792f43ab-8bf2-451b-82bc-d38461a0ad7d",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "test",
+    "createdAt": "2026-01-07T08:25:26.017Z"
+  },
+  {
+    "id": "d4955dc6-20a4-4c6f-9d63-bbfca2e16e25",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "C'est juste un test ? D'accord, tout va bien alors ! Qu'est-ce que tu veux faire aujourd'hui ?",
+    "createdAt": "2026-01-07T08:25:28.455Z"
+  },
+  {
+    "id": "0410d78b-c879-4659-ad66-d1d0179e2278",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "coicou",
+    "createdAt": "2026-01-07T08:29:14.916Z"
+  },
+  {
+    "id": "9e2681cf-3ccb-4273-989f-73f2afad70ad",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Un \"coicot\" ! Ça fait rire ! Qu'est-ce qui te fais rire si malheureusement ?",
+    "createdAt": "2026-01-07T08:29:15.503Z"
+  },
+  {
+    "id": "75889f24-0543-4f32-a683-9050e54929a4",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "coucou",
+    "createdAt": "2026-01-07T08:30:13.490Z"
+  },
+  {
+    "id": "c7341869-676c-4473-8177-aea173d009b4",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Impossible de joindre le modèle llama3.2. Vérifiez qu'il est bien lancé localement.",
+    "createdAt": "2026-01-07T08:30:13.520Z"
+  },
+  {
+    "id": "259b0133-436d-42bb-84ac-cf61b6c8fd50",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "hola amigo",
+    "createdAt": "2026-01-07T08:30:39.854Z"
+  },
+  {
+    "id": "cac97092-a4b0-4796-bc78-c4f13d3b6629",
+    "chatId": "25f16882-8827-4aeb-bfe9-567efbf8d1a6",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Hola, amigo ! C'est sympa de te voir ici ! Comment t'appelles-tu ? Est-ce que tu as besoin d'aide ou juste veux-tu passer du temps en conversation ? Je suis là pour te écouter et t'aider si tu en as besoin !",
+    "createdAt": "2026-01-07T08:30:42.825Z"
   }
 ]

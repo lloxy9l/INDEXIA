@@ -1,0 +1,30 @@
+[
+  {
+    "id": "c829e1be-a224-4fbf-97fc-a3745b1b4880",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2020,
+    "createdAt": "2026-01-07T08:25:28.046Z"
+  },
+  {
+    "id": "20ef291f-f8e1-4be8-8a89-8385eef4c4c7",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 171,
+    "createdAt": "2026-01-07T08:29:15.098Z"
+  },
+  {
+    "id": "750258b3-4e8d-4327-a326-952f794a49a1",
+    "status": "error",
+    "model": "llama3.2",
+    "durationMs": 3,
+    "createdAt": "2026-01-07T08:30:13.507Z"
+  },
+  {
+    "id": "2699527e-9cc7-4228-b79d-c6764c6f2940",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2026,
+    "createdAt": "2026-01-07T08:30:41.893Z"
+  }
+]
