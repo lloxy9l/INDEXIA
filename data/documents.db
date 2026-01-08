@@ -10,5 +10,29 @@
     "uploader": "user",
     "confidentiality": "Public interne",
     "status": "Indexé"
+  },
+  {
+    "id": "DOC-FS-Methodo_documentaire.pdf",
+    "name": "Methodo_documentaire.pdf",
+    "storedName": "Methodo_documentaire.pdf",
+    "type": "PDF",
+    "category": "Import",
+    "size": 961692,
+    "uploadedAt": "2026-01-08T09:51:53.884Z",
+    "uploader": "Upload dashboard",
+    "confidentiality": "Public interne",
+    "status": "Stocké"
+  },
+  {
+    "id": "DOC-FS-TheseTopics2024_PolytechAnnecy.pdf",
+    "name": "TheseTopics2024_PolytechAnnecy.pdf",
+    "storedName": "TheseTopics2024_PolytechAnnecy.pdf",
+    "type": "PDF",
+    "category": "Non classé",
+    "size": 54832,
+    "uploadedAt": "2026-01-08T09:58:25.197Z",
+    "uploader": "user",
+    "confidentiality": "Public interne",
+    "status": "Indexé"
   }
 ]

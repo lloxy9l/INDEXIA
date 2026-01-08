@@ -134,6 +134,7 @@ type DashboardDocument = {
 type DocumentChunkRow = {
   id: string
   preview: string
+  text: string
   dim: number
   quality: string
 }
@@ -273,8 +274,8 @@ const diagnostics = [
 const indexSettings = {
   dim: 1536,
   type: "HNSW",
-  chunkSize: 500,
-  chunkOverlap: 50,
+  chunkSize: 200,
+  chunkOverlap: 30,
   k: 4,
   rerank: "ON",
   embeddingModel: "Llama 3",
@@ -680,6 +681,8 @@ export default function Page() {
   const [documentChunksState, setDocumentChunksState] = React.useState<DocumentChunkRow[]>([])
   const [documentChunksError, setDocumentChunksError] = React.useState("")
   const [documentChunksLoading, setDocumentChunksLoading] = React.useState(false)
+  const [chunkCounts, setChunkCounts] = React.useState<Record<string, number>>({})
+  const [expandedChunkId, setExpandedChunkId] = React.useState<string | null>(null)
   const documentsFs = React.useMemo(
     () => documentsState.filter((doc) => doc.id.startsWith("DOC-FS-")),
     [documentsState]
@@ -817,6 +820,7 @@ export default function Page() {
           return {
             id: typeof chunk?.id === "string" ? chunk.id : `chunk-${index + 1}`,
             preview: typeof chunk?.preview === "string" ? chunk.preview : "",
+            text: typeof chunk?.text === "string" ? chunk.text : "",
             dim: indexSettings.dim,
             quality: tokenCount >= 120 ? "ok" : tokenCount > 0 ? "warning" : "N/A",
           }
@@ -824,6 +828,10 @@ export default function Page() {
 
         if (isActive) {
           setDocumentChunksState(mapped)
+          setChunkCounts((prev) => ({
+            ...prev,
+            [selectedDocId]: mapped.length,
+          }))
         }
       })
       .catch((error) => {
@@ -838,6 +846,7 @@ export default function Page() {
       .finally(() => {
         if (isActive) {
           setDocumentChunksLoading(false)
+          setExpandedChunkId(null)
         }
       })
 
@@ -876,7 +885,7 @@ export default function Page() {
         status: doc.status,
         chunks:
           doc.status === "Indexé"
-            ? estimateChunksFromSize(doc.size) ?? "N/A"
+            ? chunkCounts[doc.id] ?? estimateChunksFromSize(doc.size) ?? "N/A"
             : "N/A",
         indexedAt: formatDashboardDate(doc.uploadedAt),
         embedding:
@@ -889,7 +898,7 @@ export default function Page() {
                 : "N/A",
         size: doc.size,
       })),
-    [documentsFs]
+    [documentsFs, chunkCounts]
   )
   const indexedDocs = documentsFs.filter((d) => d.status === "Indexé").length
   const inProgressDocs = documentsFs.filter((d) => d.status === "En cours").length
@@ -1161,6 +1170,12 @@ export default function Page() {
           toast.warning(
             "Découpage sémantique BERT indisponible, chunking standard utilisé."
           )
+        }
+        if (Number.isFinite(payload?.chunks)) {
+          setChunkCounts((prev) => ({
+            ...prev,
+            [docId]: Number(payload.chunks),
+          }))
         }
 
         setDocumentsState((prev) =>
@@ -2177,21 +2192,44 @@ export default function Page() {
                                     </TableCell>
                                   </TableRow>
                                 ) : (
-                                  documentChunksState.map((chunk) => (
-                                    <TableRow key={chunk.id}>
-                                      <TableCell>{chunk.id}</TableCell>
-                                      <TableCell className="max-w-xs truncate">
-                                        {chunk.preview}
-                                      </TableCell>
-                                      <TableCell>{chunk.dim}</TableCell>
-                                      <TableCell>{chunk.quality}</TableCell>
-                                      <TableCell>
-                                        <Button size="sm" variant="outline">
-                                          Voir
-                                        </Button>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
+                                  documentChunksState.map((chunk) => {
+                                    const isExpanded = expandedChunkId === chunk.id
+
+                                    return (
+                                      <React.Fragment key={chunk.id}>
+                                        <TableRow>
+                                          <TableCell>{chunk.id}</TableCell>
+                                          <TableCell className="max-w-xs truncate">
+                                            {chunk.preview}
+                                          </TableCell>
+                                          <TableCell>{chunk.dim}</TableCell>
+                                          <TableCell>{chunk.quality}</TableCell>
+                                          <TableCell>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() =>
+                                                setExpandedChunkId(
+                                                  isExpanded ? null : chunk.id
+                                                )
+                                              }
+                                            >
+                                              {isExpanded ? "Masquer" : "Voir"}
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                        {isExpanded ? (
+                                          <TableRow>
+                                            <TableCell colSpan={5} className="bg-muted/40">
+                                              <div className="text-sm whitespace-pre-wrap">
+                                                {chunk.text || "Contenu indisponible."}
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ) : null}
+                                      </React.Fragment>
+                                    )
+                                  })
                                 )}
                               </TableBody>
                             </Table>

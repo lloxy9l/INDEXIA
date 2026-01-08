@@ -119,6 +119,7 @@ export async function GET(
       chunks: chunks.map((chunk) => ({
         id: chunk.chunk_id,
         preview: chunk.text.slice(0, 160),
+        text: chunk.text,
         token_count: chunk.token_count,
         created_at: chunk.created_at,
       })),

@@ -85,8 +85,8 @@ let bertExtractorPromise: Promise<
 // chunk_overlap keeps shared context between chunks, improving continuity across boundaries for RAG queries.
 export function chunk_text(
   text: string,
-  chunk_size: number = 500,
-  chunk_overlap: number = 50
+  chunk_size: number = 200,
+  chunk_overlap: number = 30
 ): TextChunk[] {
   if (!text.trim()) {
     return []
@@ -167,8 +167,8 @@ export function document_id_from_string(id: string): number {
 // Optional: paragraph-based chunking to respect structural breaks.
 export function chunk_text_by_paragraphs(
   text: string,
-  chunk_size: number = 500,
-  chunk_overlap: number = 50
+  chunk_size: number = 200,
+  chunk_overlap: number = 30
 ): TextChunk[] {
   const paragraphs = split_paragraphs(text)
   if (paragraphs.length === 0) {
@@ -275,6 +275,39 @@ export function clean_pdf_text(text: string): string {
         "$1"
       )
 
+    if (/^--\s*\d+\s+of\s+\d+\s*--$/i.test(line)) {
+      pushParagraph()
+      continue
+    }
+
+    if (/^[*\-_]{6,}$/.test(line)) {
+      pushParagraph()
+      continue
+    }
+
+    const separatorMatch = line.match(/(\*{6,}|-{6,}|_{6,})/)
+    if (separatorMatch) {
+      const parts = line.split(/(\*{6,}|-{6,}|_{6,})/).map((part) => part.trim())
+      const before = parts[0]?.replace(/[*\-_]+/g, "").trim() ?? ""
+      const after = parts.slice(1).join(" ").replace(/[*\-_]+/g, "").trim()
+      if (before) {
+        current = current ? `${current} ${before}` : before
+      }
+      pushParagraph()
+      if (after) {
+        current = after
+      }
+      continue
+    }
+
+    if (/^(prerequisites|keywords|duration)\s*:/i.test(line)) {
+      if (current) {
+        pushParagraph()
+      }
+    } else if (current && line.length <= 80 && /^[A-Z]/.test(line)) {
+      pushParagraph()
+    }
+
     const signature = line
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]+/giu, "")
@@ -307,8 +340,8 @@ export function clean_pdf_text(text: string): string {
 
 export async function chunk_text_with_ollama(
   text: string,
-  chunk_size: number = 500,
-  chunk_overlap: number = 50,
+  chunk_size: number = 200,
+  chunk_overlap: number = 30,
   options: OllamaChunkingOptions = {}
 ): Promise<OllamaChunkingResult> {
   if (!text.trim()) {
@@ -361,6 +394,15 @@ export async function chunk_text_with_ollama(
   const paragraphInfos = build_paragraph_infos(text)
   if (paragraphInfos.length === 0) {
     return { chunks: [], used: false, attempted: false, reason: "empty" }
+  }
+
+  if (paragraphInfos.length < 2) {
+    return {
+      chunks: null,
+      used: false,
+      attempted: false,
+      reason: "insufficient_paragraphs",
+    }
   }
 
   if (paragraphInfos.length > maxParagraphs) {
@@ -439,8 +481,8 @@ export async function chunk_text_with_ollama(
 
 export async function chunk_text_with_bert(
   text: string,
-  chunk_size: number = 500,
-  chunk_overlap: number = 50,
+  chunk_size: number = 200,
+  chunk_overlap: number = 30,
   options: SemanticChunkingOptions = {}
 ): Promise<SemanticChunkingResult> {
   if (!text.trim()) {
@@ -461,25 +503,25 @@ export async function chunk_text_with_bert(
   const model =
     options.model ??
     (typeof process !== "undefined" ? process.env?.BERT_CHUNKING_MODEL : undefined) ??
-    "Xenova/bert-base-multilingual-cased"
+    "Xenova/paraphrase-multilingual-MiniLM-L12-v2"
   const timeoutMs = normalize_number(
     options.timeout_ms ??
       (typeof process !== "undefined" ? Number(process.env?.BERT_CHUNKING_TIMEOUT_MS) : NaN),
-    12000
+    8000
   )
   const maxParagraphs = normalize_number(
     options.max_paragraphs ??
       (typeof process !== "undefined"
         ? Number(process.env?.BERT_CHUNKING_MAX_PARAGRAPHS)
         : NaN),
-    160
+    80
   )
   const maxChars = normalize_number(
     options.max_chars ??
       (typeof process !== "undefined"
         ? Number(process.env?.BERT_CHUNKING_MAX_CHARS)
         : NaN),
-    20000
+    12000
   )
   const similarityThreshold =
     typeof options.similarity_threshold === "number"
