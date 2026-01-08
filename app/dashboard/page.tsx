@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
@@ -130,6 +131,13 @@ type DashboardDocument = {
   status: string
 }
 
+type DocumentChunkRow = {
+  id: string
+  preview: string
+  dim: number
+  quality: string
+}
+
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -230,27 +238,6 @@ const documents: DashboardDocument[] = [
   },
 ]
 
-const documentChunks = [
-  {
-    id: "Chunk-001",
-    preview: 'Procédure d\'incident – escalade L2 vers L3 en < 30 min…',
-    dim: 4096,
-    quality: "ok",
-  },
-  {
-    id: "Chunk-002",
-    preview: "En cas de panne réseau, isoler le switch de distribution…",
-    dim: 4096,
-    quality: "ok",
-  },
-  {
-    id: "Chunk-003",
-    preview: "Rappel des obligations RGPD pour les exports utilisateurs…",
-    dim: 4096,
-    quality: "warning",
-  },
-]
-
 const indexChunks = [
   {
     id: "1253",
@@ -290,7 +277,7 @@ const indexSettings = {
   chunkOverlap: 50,
   k: 4,
   rerank: "ON",
-  embeddingModel: "mistral-embed",
+  embeddingModel: "Llama 3",
 }
 
 const requestLogs = [
@@ -367,7 +354,7 @@ const requestDetail = {
   embedding: {
     text: "Procédure incident ?",
     dim: 1536,
-    model: "mistral-embed",
+    model: "Llama 3",
     norm: "12.08",
     preview: "[0.12, -0.04, 0.33, ...]",
   },
@@ -690,6 +677,9 @@ export default function Page() {
     nextIsAdmin: boolean
   } | null>(null)
   const [documentsState, setDocumentsState] = React.useState<DashboardDocument[]>(documents)
+  const [documentChunksState, setDocumentChunksState] = React.useState<DocumentChunkRow[]>([])
+  const [documentChunksError, setDocumentChunksError] = React.useState("")
+  const [documentChunksLoading, setDocumentChunksLoading] = React.useState(false)
   const documentsFs = React.useMemo(
     () => documentsState.filter((doc) => doc.id.startsWith("DOC-FS-")),
     [documentsState]
@@ -705,9 +695,7 @@ export default function Page() {
   const [deletingDocumentId, setDeletingDocumentId] = React.useState("")
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [docsTab, setDocsTab] = React.useState("list")
-  const [selectedDocId, setSelectedDocId] = React.useState(
-    documents[0]?.id ?? ""
-  )
+  const [selectedDocId, setSelectedDocId] = React.useState("")
   const uploaderName = React.useMemo(() => {
     const first = session?.firstName?.trim()
     if (first) return first
@@ -801,6 +789,63 @@ export default function Page() {
     fetchDocumentsFromApi()
   }, [fetchDocumentsFromApi])
 
+  React.useEffect(() => {
+    let isActive = true
+    if (!selectedDocId || !selectedDocId.startsWith("DOC-FS-")) {
+      setDocumentChunksState([])
+      setDocumentChunksError("")
+      setDocumentChunksLoading(false)
+      return () => {
+        isActive = false
+      }
+    }
+
+    setDocumentChunksLoading(true)
+    setDocumentChunksError("")
+
+    fetch(`/api/documents/${encodeURIComponent(selectedDocId)}/chunks`)
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(payload?.error || `Erreur ${res.status}`)
+        }
+        const incoming = Array.isArray(payload?.chunks) ? payload.chunks : []
+        const mapped = incoming.map((chunk: any, index: number) => {
+          const tokenCount =
+            Number.isFinite(chunk?.token_count) ? Number(chunk.token_count) : 0
+
+          return {
+            id: typeof chunk?.id === "string" ? chunk.id : `chunk-${index + 1}`,
+            preview: typeof chunk?.preview === "string" ? chunk.preview : "",
+            dim: indexSettings.dim,
+            quality: tokenCount >= 120 ? "ok" : tokenCount > 0 ? "warning" : "N/A",
+          }
+        })
+
+        if (isActive) {
+          setDocumentChunksState(mapped)
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors du chargement des chunks", error)
+        if (isActive) {
+          setDocumentChunksError(
+            error instanceof Error ? error.message : "Impossible de charger les chunks"
+          )
+          setDocumentChunksState([])
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setDocumentChunksLoading(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [selectedDocId])
+
   const thirtyDaysAgo = React.useMemo(() => {
     const now = Date.now()
     const days30 = 30 * 24 * 60 * 60 * 1000
@@ -888,8 +933,13 @@ export default function Page() {
     }
 
     const status = selectedDoc.status
-    const chunks = estimateChunksFromSize(selectedDoc.size)
-    const embeddingsSize = estimateEmbeddingsSize(chunks, indexSettings.dim)
+    const chunkCount =
+      documentChunksState.length > 0 ? documentChunksState.length : null
+    const chunks = chunkCount ?? estimateChunksFromSize(selectedDoc.size)
+    const embeddingsSize = estimateEmbeddingsSize(
+      typeof chunks === "number" ? chunks : null,
+      indexSettings.dim
+    )
 
     return {
       chunks: formatRagField(
@@ -904,7 +954,7 @@ export default function Page() {
         "—"
       ),
     }
-  }, [selectedDoc])
+  }, [selectedDoc, documentChunksState])
 
   const applyAdminToggle = React.useCallback((id: string, nextIsAdmin: boolean) => {
     setUsersState((prev) =>
@@ -1074,17 +1124,6 @@ export default function Page() {
     },
     [selectedDocId]
   )
-  const reindexTimeouts = React.useRef<Record<string, number>>({})
-
-  React.useEffect(() => {
-    return () => {
-      Object.values(reindexTimeouts.current).forEach((timeoutId) => {
-        window.clearTimeout(timeoutId)
-      })
-      reindexTimeouts.current = {}
-    }
-  }, [])
-
   const focusDocument = React.useCallback(
     (docId: string) => {
       setSelectedDocId(docId)
@@ -1095,33 +1134,54 @@ export default function Page() {
   )
 
   const handleReindexDocument = React.useCallback(
-    (docId: string) => {
+    async (docId: string) => {
       setDocumentsState((prev) =>
         prev.map((doc) =>
           doc.id === docId ? { ...doc, status: "En cours" } : doc
         )
       )
-      const existing = reindexTimeouts.current[docId]
-      if (existing) window.clearTimeout(existing)
-      reindexTimeouts.current[docId] = window.setTimeout(() => {
+
+      try {
+        const res = await fetch(
+          `/api/documents/${encodeURIComponent(docId)}/chunks`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chunkSize: indexSettings.chunkSize,
+              chunkOverlap: indexSettings.chunkOverlap,
+            }),
+          }
+        )
+        const payload = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(payload?.error || `Erreur ${res.status}`)
+        }
+        if (payload?.semantic?.attempted && payload?.semantic?.used === false) {
+          toast.warning(
+            "Découpage sémantique BERT indisponible, chunking standard utilisé."
+          )
+        }
+
         setDocumentsState((prev) =>
           prev.map((doc) =>
             doc.id === docId ? { ...doc, status: "Indexé" } : doc
           )
         )
-        delete reindexTimeouts.current[docId]
-      }, 1200)
+      } catch (error) {
+        console.error("Erreur lors du chunking", error)
+        setDocumentsState((prev) =>
+          prev.map((doc) =>
+            doc.id === docId ? { ...doc, status: "Erreur" } : doc
+          )
+        )
+      }
     },
     [setDocumentsState]
   )
 
   const handleClearEmbeddings = React.useCallback(
     (docId: string) => {
-      const existing = reindexTimeouts.current[docId]
-      if (existing) {
-        window.clearTimeout(existing)
-        delete reindexTimeouts.current[docId]
-      }
       setDocumentsState((prev) =>
         prev.map((doc) =>
           doc.id === docId ? { ...doc, status: "Stocké" } : doc
@@ -2102,21 +2162,37 @@ export default function Page() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {documentChunks.map((chunk) => (
-                                  <TableRow key={chunk.id}>
-                                    <TableCell>{chunk.id}</TableCell>
-                                    <TableCell className="max-w-xs truncate">
-                                      {chunk.preview}
-                                    </TableCell>
-                                    <TableCell>{chunk.dim}</TableCell>
-                                    <TableCell>{chunk.quality}</TableCell>
-                                    <TableCell>
-                                      <Button size="sm" variant="outline">
-                                        Voir
-                                      </Button>
+                                {documentChunksLoading ? (
+                                  <TableRow>
+                                    <TableCell colSpan={5}>Chargement des chunks...</TableCell>
+                                  </TableRow>
+                                ) : documentChunksError ? (
+                                  <TableRow>
+                                    <TableCell colSpan={5}>{documentChunksError}</TableCell>
+                                  </TableRow>
+                                ) : documentChunksState.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={5}>
+                                      Aucun chunk disponible pour ce document.
                                     </TableCell>
                                   </TableRow>
-                                ))}
+                                ) : (
+                                  documentChunksState.map((chunk) => (
+                                    <TableRow key={chunk.id}>
+                                      <TableCell>{chunk.id}</TableCell>
+                                      <TableCell className="max-w-xs truncate">
+                                        {chunk.preview}
+                                      </TableCell>
+                                      <TableCell>{chunk.dim}</TableCell>
+                                      <TableCell>{chunk.quality}</TableCell>
+                                      <TableCell>
+                                        <Button size="sm" variant="outline">
+                                          Voir
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                )}
                               </TableBody>
                             </Table>
                           </CardContent>

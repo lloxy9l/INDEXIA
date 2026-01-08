@@ -6,7 +6,7 @@ import { readDocuments } from "@/lib/documents"
 
 export const runtime = "nodejs"
 
-const uploadDir = path.join(process.cwd(), "data", "doc")
+const uploadDir = path.join(process.cwd(), "data", "documents")
 
 function normalizeName(value: string | null) {
   if (!value) return null
@@ -38,12 +38,13 @@ function guessMimeType(fileName: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const url = new URL(request.url)
     const lastSegment = url.pathname.split("/").filter(Boolean).pop()
-    const rawId = params?.id ?? lastSegment ?? ""
+    const resolvedParams = await params
+    const rawId = resolvedParams?.id ?? lastSegment ?? ""
     const id = decodeURIComponent(rawId)
     if (!id) {
       return NextResponse.json({ error: "Identifiant manquant" }, { status: 400 })

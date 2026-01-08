@@ -1,5 +1,6 @@
 import fs from "fs/promises"
 import path from "path"
+import { pathToFileURL } from "url"
 import { NextResponse } from "next/server"
 
 import {
@@ -8,10 +9,35 @@ import {
   writeDocuments,
   type DocumentRecord,
 } from "@/lib/documents"
+import {
+  chunk_text,
+  clean_text,
+  document_id_from_string,
+  prepare_chunks_for_indexing,
+  clean_pdf_text,
+  chunk_text_with_bert,
+} from "@/lib/chunking"
+import { readChunks, replaceChunksForDocument, writeChunks } from "@/lib/chunks"
+import { PDFParse } from "pdf-parse"
 
 export const runtime = "nodejs"
 
-const uploadDir = path.join(process.cwd(), "data", "doc")
+const uploadDir = path.join(process.cwd(), "data", "documents")
+const pdfWorkerSrc = pathToFileURL(
+  path.join(process.cwd(), "node_modules", "pdfjs-dist", "legacy", "build", "pdf.worker.mjs")
+).href
+
+PDFParse.setWorker(pdfWorkerSrc)
+const supportedTextExtensions = new Set([
+  ".txt",
+  ".md",
+  ".markdown",
+  ".csv",
+  ".tsv",
+  ".json",
+  ".log",
+])
+const supportedPdfExtensions = new Set([".pdf"])
 
 function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes)) return "N/A"
@@ -25,6 +51,27 @@ function formatFileSize(bytes: number) {
 function sanitizeFilename(name: string) {
   const safe = name.replace(/[^a-zA-Z0-9._-]/g, "_")
   return safe || `fichier-${Date.now()}`
+}
+
+function isSupportedTextFile(fileName: string) {
+  return supportedTextExtensions.has(path.extname(fileName).toLowerCase())
+}
+
+function isPdfFile(fileName: string) {
+  return supportedPdfExtensions.has(path.extname(fileName).toLowerCase())
+}
+
+async function extractTextFromBuffer(buffer: Buffer, fileName: string) {
+  if (isPdfFile(fileName)) {
+    const parser = new PDFParse({ data: buffer, disableWorker: true })
+    try {
+      const parsed = await parser.getText()
+      return parsed.text || ""
+    } finally {
+      await parser.destroy()
+    }
+  }
+  return buffer.toString("utf8")
 }
 
 function toApiDoc(doc: DocumentRecord) {
@@ -151,6 +198,8 @@ export async function POST(request: Request) {
 
     await ensureUploadDir()
     const existingDocuments = await readDocuments()
+    let existingChunks = await readChunks()
+    let chunksUpdated = false
 
     const documents = await Promise.all(
       files.map(async (file) => {
@@ -159,6 +208,44 @@ export async function POST(request: Request) {
         const filePath = await buildFilePath(file.name)
         const storedName = path.basename(filePath)
         await fs.writeFile(filePath, buffer)
+
+        let status: DocumentRecord["status"] = "Stocké"
+
+        if (isSupportedTextFile(storedName) || isPdfFile(storedName)) {
+          try {
+            const extracted = await extractTextFromBuffer(buffer, storedName)
+            const cleaned = isPdfFile(storedName)
+              ? clean_pdf_text(extracted)
+              : clean_text(extracted)
+            const semanticResult = await chunk_text_with_bert(cleaned)
+            const chunks =
+              semanticResult.used && semanticResult.chunks
+                ? semanticResult.chunks
+                : chunk_text(cleaned)
+            if (chunks.length > 0) {
+              const indexedChunks = prepare_chunks_for_indexing(
+                chunks,
+                document_id_from_string(`DOC-FS-${storedName}`),
+                storedName
+              )
+              const chunkRecords = indexedChunks.map((chunk) => ({
+                ...chunk,
+                document_ref: `DOC-FS-${storedName}`,
+              }))
+              existingChunks = replaceChunksForDocument(
+                existingChunks,
+                `DOC-FS-${storedName}`,
+                chunkRecords
+              )
+              chunksUpdated = true
+              status = "Indexé"
+            } else {
+              status = "Erreur"
+            }
+          } catch {
+            status = "Erreur"
+          }
+        }
 
         const record: DocumentRecord = {
           id: `DOC-FS-${storedName}`,
@@ -173,7 +260,7 @@ export async function POST(request: Request) {
           uploadedAt: new Date().toISOString(),
           uploader,
           confidentiality,
-          status: "Stocké",
+          status,
         }
 
         return record
@@ -185,6 +272,9 @@ export async function POST(request: Request) {
       existingDocuments
     )
     await writeDocuments(merged)
+    if (chunksUpdated) {
+      await writeChunks(existingChunks)
+    }
 
     return NextResponse.json({ documents: documents.map(toApiDoc) })
   } catch (error) {
