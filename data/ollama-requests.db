@@ -1,142 +1,58 @@
 [
   {
-    "id": "c829e1be-a224-4fbf-97fc-a3745b1b4880",
+    "id": "bf7939d3-986b-472c-b3e1-ebf7ce992aeb",
     "status": "ok",
     "model": "llama3.2",
-    "durationMs": 2020,
-    "createdAt": "2026-01-07T08:25:28.046Z"
+    "durationMs": 2700,
+    "createdAt": "2026-01-12T09:18:11.303Z"
   },
   {
-    "id": "20ef291f-f8e1-4be8-8a89-8385eef4c4c7",
+    "id": "33e220c3-0eb7-4e9b-86c7-3b374872e09c",
     "status": "ok",
     "model": "llama3.2",
-    "durationMs": 171,
-    "createdAt": "2026-01-07T08:29:15.098Z"
+    "durationMs": 186,
+    "createdAt": "2026-01-12T09:18:23.618Z"
   },
   {
-    "id": "750258b3-4e8d-4327-a326-952f794a49a1",
-    "status": "error",
-    "model": "llama3.2",
-    "durationMs": 3,
-    "createdAt": "2026-01-07T08:30:13.507Z"
-  },
-  {
-    "id": "2699527e-9cc7-4228-b79d-c6764c6f2940",
+    "id": "cbf0f5b4-edad-4c8b-9240-c32a67ac81d6",
     "status": "ok",
     "model": "llama3.2",
-    "durationMs": 2026,
-    "createdAt": "2026-01-07T08:30:41.893Z"
+    "durationMs": 411,
+    "createdAt": "2026-01-12T09:18:28.863Z"
   },
   {
-    "id": "ca542834-0182-4691-9410-c653e2d3d097",
+    "id": "5e03f9ca-8d92-4173-bbb8-e4db9204f958",
     "status": "ok",
     "model": "llama3.2",
-    "durationMs": 526,
-    "createdAt": "2026-01-07T12:57:05.107Z"
+    "durationMs": 199,
+    "createdAt": "2026-01-12T09:19:22.972Z"
   },
   {
-    "id": "f11f172a-b8d1-4bc8-bcc9-b92bc244b8b2",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 317,
-    "createdAt": "2026-01-07T12:57:40.308Z"
-  },
-  {
-    "id": "e2845391-56fd-4089-96f0-bcb9f30dd379",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 730,
-    "createdAt": "2026-01-07T12:58:34.197Z"
-  },
-  {
-    "id": "d428b674-6f2d-44be-94bf-860e88b5c10b",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 758,
-    "createdAt": "2026-01-07T12:59:01.954Z"
-  },
-  {
-    "id": "1821ad7b-4252-44fd-b7a2-78ead80dde13",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 295,
-    "createdAt": "2026-01-07T12:59:31.947Z"
-  },
-  {
-    "id": "76ba69db-928f-469f-9d4a-f82464dd06b5",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 3480,
-    "createdAt": "2026-01-07T20:45:08.512Z"
-  },
-  {
-    "id": "b1f95ef7-5f09-4e6a-ae0d-a75caa8f6ac4",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 1175,
-    "createdAt": "2026-01-07T20:45:30.158Z"
-  },
-  {
-    "id": "c0a86008-93be-4aa9-b808-d532e46cbfa7",
-    "status": "error",
-    "model": "llama3.2",
-    "durationMs": 2,
-    "createdAt": "2026-01-12T08:44:47.613Z"
-  },
-  {
-    "id": "fff22cc1-b13a-4bf6-85e7-cab757f35e04",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 2802,
-    "createdAt": "2026-01-12T08:45:05.625Z"
-  },
-  {
-    "id": "052d30e0-e0f6-40bb-a4f9-0ab129ea7d58",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 2028,
-    "createdAt": "2026-01-12T08:45:19.761Z"
-  },
-  {
-    "id": "078fcd05-6fd4-4ea3-8ada-9ec853bcf109",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 1583,
-    "createdAt": "2026-01-12T08:48:41.397Z"
-  },
-  {
-    "id": "f215fd52-aab7-49f1-8056-39bee85177f8",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 1682,
-    "createdAt": "2026-01-12T08:48:58.684Z"
-  },
-  {
-    "id": "41b3f5c6-73b5-4961-86c7-94cbf74064a5",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 1132,
-    "createdAt": "2026-01-12T08:49:34.056Z"
-  },
-  {
-    "id": "b0077040-2ae4-4467-9a12-f762d01d91c1",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 2677,
-    "createdAt": "2026-01-12T08:50:02.285Z"
-  },
-  {
-    "id": "a658b053-2fdd-4031-8fd5-15f5c2b5ad06",
-    "status": "ok",
-    "model": "llama3.2",
-    "durationMs": 1373,
-    "createdAt": "2026-01-12T08:50:54.552Z"
-  },
-  {
-    "id": "2d102210-eaf6-4e94-9f75-262ef666fa50",
+    "id": "a28af8ab-2ecf-4222-addf-ad6b726f5bd9",
     "status": "ok",
     "model": "llama3.2",
     "durationMs": 204,
-    "createdAt": "2026-01-12T08:51:00.849Z"
+    "createdAt": "2026-01-12T09:19:46.114Z"
+  },
+  {
+    "id": "d0ca208b-5f6a-47d9-bce5-fd563a25746d",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 211,
+    "createdAt": "2026-01-12T09:19:52.491Z"
+  },
+  {
+    "id": "8b3fc2b9-bbed-4863-adbb-a7f8c7e95635",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 202,
+    "createdAt": "2026-01-12T09:19:55.227Z"
+  },
+  {
+    "id": "6df94c14-0094-444e-81c7-326e1db556be",
+    "status": "ok",
+    "model": "qwen3:4b",
+    "durationMs": 1348,
+    "createdAt": "2026-01-12T09:35:12.341Z"
   }
 ]

@@ -32,100 +32,6 @@ import {
 
 export const description = "An interactive area chart"
 
-const chartData = [
-  { date: "2024-04-01", ragStandard: 220, ragRerank: 140 },
-  { date: "2024-04-02", ragStandard: 105, ragRerank: 190 },
-  { date: "2024-04-03", ragStandard: 180, ragRerank: 130 },
-  { date: "2024-04-04", ragStandard: 240, ragRerank: 260 },
-  { date: "2024-04-05", ragStandard: 360, ragRerank: 300 },
-  { date: "2024-04-06", ragStandard: 295, ragRerank: 335 },
-  { date: "2024-04-07", ragStandard: 240, ragRerank: 190 },
-  { date: "2024-04-08", ragStandard: 410, ragRerank: 320 },
-  { date: "2024-04-09", ragStandard: 70, ragRerank: 115 },
-  { date: "2024-04-10", ragStandard: 260, ragRerank: 195 },
-  { date: "2024-04-11", ragStandard: 330, ragRerank: 355 },
-  { date: "2024-04-12", ragStandard: 295, ragRerank: 220 },
-  { date: "2024-04-13", ragStandard: 345, ragRerank: 385 },
-  { date: "2024-04-14", ragStandard: 145, ragRerank: 225 },
-  { date: "2024-04-15", ragStandard: 125, ragRerank: 180 },
-  { date: "2024-04-16", ragStandard: 140, ragRerank: 195 },
-  { date: "2024-04-17", ragStandard: 450, ragRerank: 365 },
-  { date: "2024-04-18", ragStandard: 360, ragRerank: 415 },
-  { date: "2024-04-19", ragStandard: 245, ragRerank: 185 },
-  { date: "2024-04-20", ragStandard: 95, ragRerank: 155 },
-  { date: "2024-04-21", ragStandard: 140, ragRerank: 205 },
-  { date: "2024-04-22", ragStandard: 230, ragRerank: 175 },
-  { date: "2024-04-23", ragStandard: 140, ragRerank: 235 },
-  { date: "2024-04-24", ragStandard: 390, ragRerank: 295 },
-  { date: "2024-04-25", ragStandard: 220, ragRerank: 255 },
-  { date: "2024-04-26", ragStandard: 80, ragRerank: 135 },
-  { date: "2024-04-27", ragStandard: 385, ragRerank: 425 },
-  { date: "2024-04-28", ragStandard: 130, ragRerank: 185 },
-  { date: "2024-04-29", ragStandard: 320, ragRerank: 245 },
-  { date: "2024-04-30", ragStandard: 455, ragRerank: 385 },
-  { date: "2024-05-01", ragStandard: 175, ragRerank: 225 },
-  { date: "2024-05-02", ragStandard: 300, ragRerank: 315 },
-  { date: "2024-05-03", ragStandard: 255, ragRerank: 195 },
-  { date: "2024-05-04", ragStandard: 390, ragRerank: 430 },
-  { date: "2024-05-05", ragStandard: 485, ragRerank: 395 },
-  { date: "2024-05-06", ragStandard: 500, ragRerank: 525 },
-  { date: "2024-05-07", ragStandard: 395, ragRerank: 305 },
-  { date: "2024-05-08", ragStandard: 155, ragRerank: 215 },
-  { date: "2024-05-09", ragStandard: 235, ragRerank: 185 },
-  { date: "2024-05-10", ragStandard: 300, ragRerank: 335 },
-  { date: "2024-05-11", ragStandard: 340, ragRerank: 275 },
-  { date: "2024-05-12", ragStandard: 205, ragRerank: 245 },
-  { date: "2024-05-13", ragStandard: 205, ragRerank: 170 },
-  { date: "2024-05-14", ragStandard: 450, ragRerank: 495 },
-  { date: "2024-05-15", ragStandard: 480, ragRerank: 385 },
-  { date: "2024-05-16", ragStandard: 345, ragRerank: 405 },
-  { date: "2024-05-17", ragStandard: 505, ragRerank: 425 },
-  { date: "2024-05-18", ragStandard: 320, ragRerank: 355 },
-  { date: "2024-05-19", ragStandard: 240, ragRerank: 185 },
-  { date: "2024-05-20", ragStandard: 185, ragRerank: 235 },
-  { date: "2024-05-21", ragStandard: 90, ragRerank: 145 },
-  { date: "2024-05-22", ragStandard: 88, ragRerank: 125 },
-  { date: "2024-05-23", ragStandard: 255, ragRerank: 295 },
-  { date: "2024-05-24", ragStandard: 300, ragRerank: 225 },
-  { date: "2024-05-25", ragStandard: 210, ragRerank: 255 },
-  { date: "2024-05-26", ragStandard: 220, ragRerank: 180 },
-  { date: "2024-05-27", ragStandard: 425, ragRerank: 465 },
-  { date: "2024-05-28", ragStandard: 240, ragRerank: 195 },
-  { date: "2024-05-29", ragStandard: 85, ragRerank: 135 },
-  { date: "2024-05-30", ragStandard: 345, ragRerank: 285 },
-  { date: "2024-05-31", ragStandard: 185, ragRerank: 235 },
-  { date: "2024-06-01", ragStandard: 185, ragRerank: 205 },
-  { date: "2024-06-02", ragStandard: 475, ragRerank: 415 },
-  { date: "2024-06-03", ragStandard: 110, ragRerank: 165 },
-  { date: "2024-06-04", ragStandard: 445, ragRerank: 385 },
-  { date: "2024-06-05", ragStandard: 92, ragRerank: 145 },
-  { date: "2024-06-06", ragStandard: 300, ragRerank: 255 },
-  { date: "2024-06-07", ragStandard: 330, ragRerank: 375 },
-  { date: "2024-06-08", ragStandard: 390, ragRerank: 325 },
-  { date: "2024-06-09", ragStandard: 440, ragRerank: 485 },
-  { date: "2024-06-10", ragStandard: 165, ragRerank: 205 },
-  { date: "2024-06-11", ragStandard: 100, ragRerank: 155 },
-  { date: "2024-06-12", ragStandard: 495, ragRerank: 425 },
-  { date: "2024-06-13", ragStandard: 90, ragRerank: 135 },
-  { date: "2024-06-14", ragStandard: 430, ragRerank: 385 },
-  { date: "2024-06-15", ragStandard: 315, ragRerank: 355 },
-  { date: "2024-06-16", ragStandard: 375, ragRerank: 315 },
-  { date: "2024-06-17", ragStandard: 480, ragRerank: 525 },
-  { date: "2024-06-18", ragStandard: 115, ragRerank: 175 },
-  { date: "2024-06-19", ragStandard: 345, ragRerank: 295 },
-  { date: "2024-06-20", ragStandard: 412, ragRerank: 455 },
-  { date: "2024-06-21", ragStandard: 175, ragRerank: 215 },
-  { date: "2024-06-22", ragStandard: 320, ragRerank: 275 },
-  { date: "2024-06-23", ragStandard: 485, ragRerank: 535 },
-  { date: "2024-06-24", ragStandard: 138, ragRerank: 185 },
-  { date: "2024-06-25", ragStandard: 148, ragRerank: 195 },
-  { date: "2024-06-26", ragStandard: 438, ragRerank: 385 },
-  { date: "2024-06-27", ragStandard: 452, ragRerank: 495 },
-  { date: "2024-06-28", ragStandard: 155, ragRerank: 205 },
-  { date: "2024-06-29", ragStandard: 110, ragRerank: 170 },
-  { date: "2024-06-30", ragStandard: 450, ragRerank: 405 },
-]
-
 const chartConfig = {
   visitors: {
     label: "Requêtes",
@@ -140,9 +46,16 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+type ChartPoint = {
+  date: string
+  ragStandard: number
+  ragRerank: number
+}
+
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
+  const [chartData, setChartData] = React.useState<ChartPoint[]>([])
 
   React.useEffect(() => {
     if (isMobile) {
@@ -150,19 +63,26 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile])
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
-    }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+  React.useEffect(() => {
+    const controller = new AbortController()
+    const days = timeRange === "30d" ? 30 : timeRange === "7d" ? 7 : 90
+
+    fetch(`/api/metrics/requests-by-day?days=${days}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Impossible de charger les requêtes")
+        const payload = (await res.json()) as { data?: ChartPoint[] }
+        setChartData(Array.isArray(payload?.data) ? payload.data : [])
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        setChartData([])
+      })
+
+    return () => controller.abort()
+  }, [timeRange])
 
   return (
     <Card className="@container/card shadow-none bg-white/80 dark:bg-card border border-primary/15">
@@ -213,7 +133,7 @@ export function ChartAreaInteractive() {
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={filteredData}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillRagStandard" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -271,14 +191,14 @@ export function ChartAreaInteractive() {
             />
             <Area
               dataKey="ragRerank"
-              type="natural"
+              type="monotone"
               fill="url(#fillRagRerank)"
               stroke="var(--color-ragRerank)"
               stackId="a"
             />
             <Area
               dataKey="ragStandard"
-              type="natural"
+              type="monotone"
               fill="url(#fillRagStandard)"
               stroke="var(--color-ragStandard)"
               stackId="a"

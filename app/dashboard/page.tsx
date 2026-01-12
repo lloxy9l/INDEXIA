@@ -22,6 +22,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
+import { LLM_CATALOG, modelKeyFromName } from "@/lib/llm-catalog"
 import { cn } from "@/lib/utils"
 import {
   SidebarInset,
@@ -60,19 +61,17 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
-const modelShare = [
-  { key: "llama", label: "Llama 3", value: 38 },
-  { key: "mistral", label: "Mistral", value: 26 },
-  { key: "gpt4omini", label: "GPT-4o mini", value: 22 },
-  { key: "qwen", label: "Qwen", value: 14 },
-]
+type ModelShareItem = {
+  key: string
+  label: string
+  value: number
+}
 
-const modelShareConfig = {
-  llama: { label: "Llama 3", color: "#2563eb" }, // bleu
-  mistral: { label: "Mistral", color: "#ef4444" }, // rouge
-  gpt4omini: { label: "GPT-4o mini", color: "#22c55e" }, // vert
-  qwen: { label: "Qwen", color: "#f59e0b" }, // orange
-} satisfies ChartConfig
+const defaultModelShare: ModelShareItem[] = LLM_CATALOG.map((value) => ({
+  key: modelKeyFromName(value),
+  label: value,
+  value: 0,
+}))
 
 const pipelineUsage = [
   { pipeline: "RAG standard", requests: 420 },
@@ -661,6 +660,18 @@ export default function Page() {
   const topUsersGradientId = `${React.useId().replace(/:/g, "")}-users`
   const topDocsGradientId = `${React.useId().replace(/:/g, "")}-docs`
   const benchmarkGradBase = React.useId().replace(/:/g, "")
+  const [modelShare, setModelShare] = React.useState<ModelShareItem[]>(defaultModelShare)
+  const modelShareConfig = React.useMemo(() => {
+    const palette = ["#2563eb", "#ef4444", "#22c55e", "#f59e0b", "#0ea5e9", "#a855f7"]
+    const config: ChartConfig = {}
+    modelShare.forEach((item, index) => {
+      config[item.key] = {
+        label: item.label,
+        color: palette[index % palette.length],
+      }
+    })
+    return config
+  }, [modelShare])
   const [session, setSession] = React.useState<{
     firstName?: string | null
     lastName?: string | null
@@ -724,6 +735,28 @@ export default function Page() {
       }
     }
     loadSession()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadModelShare = async () => {
+      try {
+        const res = await fetch("/api/metrics/requests-by-model", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.data)) {
+          setModelShare(payload.data as ModelShareItem[])
+        }
+      } catch {
+        if (active) setModelShare(defaultModelShare)
+      }
+    }
+    loadModelShare()
     return () => {
       active = false
     }
@@ -2786,7 +2819,7 @@ export default function Page() {
                     <Card className="shadow-none  dark:bg-primary/15 border border-primary/15">
                       <CardHeader>
                         <CardTitle>Répartition des requêtes par modèle</CardTitle>
-                        <CardDescription>Llama 3 / Mistral / GPT‑4o mini / Qwen</CardDescription>
+                        <CardDescription>Basé sur les modèles disponibles dans le chat</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ChartContainer
@@ -2795,7 +2828,9 @@ export default function Page() {
                         >
                           <PieChart>
                             <defs>
-                              {modelShare.map((item) => (
+                              {modelShare
+                                .filter((item) => item.value > 0)
+                                .map((item) => (
                                 <linearGradient
                                   key={item.key}
                                   id={`${pieGradientBase}-${item.key}`}
@@ -2818,17 +2853,21 @@ export default function Page() {
                               ))}
                             </defs>
                             <Pie
-                              data={modelShare}
+                              data={modelShare.filter((item) => item.value > 0)}
                               dataKey="value"
                               nameKey="label"
                               innerRadius={48}
                               strokeWidth={0}
                               labelLine={false}
                               label={({ percent }) =>
-                                `${Math.round((percent || 0) * 100)}%`
+                                Number.isFinite(percent)
+                                  ? `${Math.round(percent * 100)}%`
+                                  : "0%"
                               }
                             >
-                              {modelShare.map((item) => (
+                              {modelShare
+                                .filter((item) => item.value > 0)
+                                .map((item) => (
                                 <Cell
                                   key={item.key}
                                   fill={`url(#${pieGradientBase}-${item.key})`}
@@ -2842,16 +2881,27 @@ export default function Page() {
                               formatter={(value) => (
                                 <span className="text-sm text-foreground">{value}</span>
                               )}
-                              payload={modelShare.map((item) => ({
-                                value: item.label,
-                                type: "circle",
-                                color: `var(--color-${item.key})`,
-                              }))}
+                              payload={modelShare
+                                .filter((item) => item.value > 0)
+                                .map((item) => ({
+                                  value: item.label,
+                                  type: "circle",
+                                  color: `var(--color-${item.key})`,
+                                }))}
                             />
                             <ChartTooltip
                               content={
                                 <ChartTooltipContent
-                                  formatter={(value, name) => [`${value}`, name]}
+                                  formatter={(value, name) => {
+                                    const parsed =
+                                      typeof value === "number"
+                                        ? value
+                                        : Number.parseFloat(String(value))
+                                    const label = Number.isFinite(parsed)
+                                      ? `${parsed}%`
+                                      : `${value}`
+                                    return [label, name]
+                                  }}
                                 />
                               }
                             />

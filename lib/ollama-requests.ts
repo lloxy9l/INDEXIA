@@ -8,6 +8,7 @@ export type OllamaRequestRecord = {
   model: string
   durationMs: number
   createdAt: string
+  pipeline?: string
 }
 
 const OLLAMA_REQUESTS_PATH = path.join(
@@ -15,7 +16,7 @@ const OLLAMA_REQUESTS_PATH = path.join(
   "data",
   "ollama-requests.db"
 )
-const RETENTION_DAYS = 30
+const RETENTION_DAYS = 90
 
 export async function readOllamaRequests(): Promise<OllamaRequestRecord[]> {
   try {
@@ -48,6 +49,7 @@ export function createOllamaRequest(input: {
   status: "ok" | "error"
   model: string
   durationMs: number
+  pipeline?: string
 }): OllamaRequestRecord {
   return {
     id: randomUUID(),
@@ -55,5 +57,6 @@ export function createOllamaRequest(input: {
     model: input.model,
     durationMs: input.durationMs,
     createdAt: new Date().toISOString(),
+    pipeline: input.pipeline,
   }
 }

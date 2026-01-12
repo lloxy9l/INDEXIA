@@ -1,10 +1,11 @@
+import { LLM_CATALOG } from "@/lib/llm-catalog"
 import { appendOllamaRequest, createOllamaRequest } from "@/lib/ollama-requests"
 import { retrieveRelevantChunks } from "@/lib/rag"
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"
 
 const normalizeModelName = (name: string) => name.split(":")[0].toLowerCase()
-const FIXED_MODELS = ["llama3.2", "qwen3:4b"]
+const DEFAULT_PIPELINE = "ragStandard"
 
 const jsonHeaders = { "Content-Type": "application/json" }
 const streamHeaders = {
@@ -43,6 +44,31 @@ const buildImmediateStreamResponse = (content: string) => {
   return new Response(stream, { status: 200, headers: streamHeaders })
 }
 
+const normalizePipeline = (raw: unknown, ragEnabled: boolean) => {
+  if (typeof raw === "string") {
+    const normalized = raw.trim().toLowerCase()
+    if (!normalized) return ragEnabled ? DEFAULT_PIPELINE : undefined
+    if (["ragstandard", "standard", "rag"].includes(normalized)) {
+      return "ragStandard"
+    }
+    if (
+      [
+        "ragrerank",
+        "rerank",
+        "re-ranking",
+        "re-ranking",
+        "rag_rerank",
+        "rag+rerank",
+        "rag+re-ranking",
+      ].includes(normalized)
+    ) {
+      return "ragRerank"
+    }
+    return raw
+  }
+  return ragEnabled ? DEFAULT_PIPELINE : undefined
+}
+
 const listLocalModels = async () => {
   try {
     const res = await fetch(`${OLLAMA_HOST}/api/tags`)
@@ -61,11 +87,13 @@ export async function POST(req: Request) {
   const startedAt = Date.now()
   let requestedModel = "llama3.2"
   let attemptedOllama = false
+  let requestPipeline: string | undefined
   const queueLog = (status: "ok" | "error") => {
     const record = createOllamaRequest({
       status,
       model: requestedModel,
       durationMs: Date.now() - startedAt,
+      pipeline: requestPipeline,
     })
     appendOllamaRequest(record).catch(() => {})
   }
@@ -80,6 +108,7 @@ export async function POST(req: Request) {
       "llama3.2"
     const messages = Array.isArray(parsed?.messages) ? parsed.messages : []
     const ragEnabled = Boolean(parsed?.ragEnabled)
+    requestPipeline = normalizePipeline(parsed?.pipeline ?? parsed?.ragPipeline, ragEnabled)
 
     let ragMessages = messages
     if (ragEnabled) {
@@ -182,7 +211,7 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     const installed = await listLocalModels()
-    const catalog = FIXED_MODELS
+    const catalog = LLM_CATALOG
     return new Response(JSON.stringify({ models: catalog, installed: installed ?? [] }), {
       status: 200,
       headers: jsonHeaders,
