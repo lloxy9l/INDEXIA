@@ -84,13 +84,7 @@ const pipelineConfig = {
   requests: { label: "Requêtes", color: "#7c3aed" }, // violet
 } satisfies ChartConfig
 
-const topUsers = [
-  { name: "Alice", requests: 182 },
-  { name: "Karim", requests: 165 },
-  { name: "Sofia", requests: 149 },
-  { name: "Léo", requests: 138 },
-  { name: "Nina", requests: 120 },
-]
+const defaultTopUsers: { name: string; requests: number }[] = []
 
 const topUsersConfig = {
   requests: { label: "Requêtes", color: "#0ea5e9" }, // cyan
@@ -419,7 +413,6 @@ const activityStats = {
   requestsToday: 248,
   avgResponseMs: 420,
   errors: 6,
-  topUsers: ["Maxime", "Sofia", "Baptiste"],
 }
 
 const benchmarkModelSpeed = [
@@ -661,6 +654,7 @@ export default function Page() {
   const topDocsGradientId = `${React.useId().replace(/:/g, "")}-docs`
   const benchmarkGradBase = React.useId().replace(/:/g, "")
   const [modelShare, setModelShare] = React.useState<ModelShareItem[]>(defaultModelShare)
+  const [topUsers, setTopUsers] = React.useState(defaultTopUsers)
   const modelShareConfig = React.useMemo(() => {
     const palette = ["#2563eb", "#ef4444", "#22c55e", "#f59e0b", "#0ea5e9", "#a855f7"]
     const config: ChartConfig = {}
@@ -757,6 +751,26 @@ export default function Page() {
       }
     }
     loadModelShare()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadTopUsers = async () => {
+      try {
+        const res = await fetch("/api/metrics/top-users", { cache: "no-store" })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.data)) {
+          setTopUsers(payload.data)
+        }
+      } catch {
+        if (active) setTopUsers(defaultTopUsers)
+      }
+    }
+    loadTopUsers()
     return () => {
       active = false
     }
@@ -2785,7 +2799,7 @@ export default function Page() {
                           <CardHeader>
                             <CardDescription>Top utilisateurs</CardDescription>
                             <CardTitle className="text-2xl font-semibold tabular-nums">
-                              {activityStats.topUsers.length}
+                              {topUsers.length}
                             </CardTitle>
                           </CardHeader>
                         </Card>
@@ -2795,13 +2809,13 @@ export default function Page() {
                           <CardTitle>Top utilisateurs actifs</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-wrap gap-2 text-sm">
-                          {activityStats.topUsers.map((u) => (
+                          {topUsers.map((u) => (
                             <Badge
-                              key={u}
+                              key={u.name}
                               variant="outline"
                               className="bg-primary/10 text-foreground"
                             >
-                              {u}
+                              {u.name}
                             </Badge>
                           ))}
                         </CardContent>
