@@ -1,11 +1,47 @@
 import { appendOllamaRequest, createOllamaRequest } from "@/lib/ollama-requests"
+import { retrieveRelevantChunks } from "@/lib/rag"
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"
 
-const jsonHeaders = { "Content-Type": "application/json" }
-
 const normalizeModelName = (name: string) => name.split(":")[0].toLowerCase()
 const FIXED_MODELS = ["llama3.2", "qwen3:4b"]
+
+const jsonHeaders = { "Content-Type": "application/json" }
+const streamHeaders = {
+  "Content-Type": "text/plain; charset=utf-8",
+  "Cache-Control": "no-store",
+}
+
+const ragSystemPrompt =
+  "Tu reponds uniquement a partir des SOURCES fournies. " +
+  "Si l'information n'est pas dans les sources, reponds: " +
+  '"Je ne peux pas repondre avec les documents disponibles." ' +
+  "N'utilise aucune connaissance externe. " +
+  "Cite les sources entre crochets, par exemple [source: nom-du-fichier]."
+
+const buildRagPrompt = (
+  question: string,
+  sources: Awaited<ReturnType<typeof retrieveRelevantChunks>>
+) => {
+  const blocks = sources.map((source, index) => {
+    return [`[${index + 1}] ${source.documentName}`, source.text.trim(), ""].join("\n")
+  })
+
+  return ["Question:", question.trim(), "", "SOURCES:", blocks.join("\n")].join("\n")
+}
+
+const buildImmediateStreamResponse = (content: string) => {
+  const encoder = new TextEncoder()
+  const payload = JSON.stringify({ message: { content }, done: true }) + "\n"
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(payload))
+      controller.close()
+    },
+  })
+
+  return new Response(stream, { status: 200, headers: streamHeaders })
+}
 
 const listLocalModels = async () => {
   try {
@@ -43,6 +79,40 @@ export async function POST(req: Request) {
       (typeof parsed?.model === "string" && parsed.model.trim()) ||
       "llama3.2"
     const messages = Array.isArray(parsed?.messages) ? parsed.messages : []
+    const ragEnabled = Boolean(parsed?.ragEnabled)
+
+    let ragMessages = messages
+    if (ragEnabled) {
+      const lastUserIndex = [...messages]
+        .reverse()
+        .findIndex((entry) => entry?.role === "user" && entry?.content)
+      const resolvedUserIndex =
+        lastUserIndex === -1 ? -1 : messages.length - 1 - lastUserIndex
+
+      const question =
+        resolvedUserIndex >= 0 && typeof messages[resolvedUserIndex]?.content === "string"
+          ? messages[resolvedUserIndex].content
+          : ""
+
+      if (!question.trim()) {
+        return buildImmediateStreamResponse(
+          "Je ne peux pas repondre sans question precise."
+        )
+      }
+
+      const sources = await retrieveRelevantChunks(question, { limit: 4 })
+      if (sources.length === 0) {
+        return buildImmediateStreamResponse(
+          "Je ne peux pas repondre avec les documents disponibles."
+        )
+      }
+
+      const prompt = buildRagPrompt(question, sources)
+      ragMessages = messages.map((entry, index) =>
+        index === resolvedUserIndex ? { ...entry, content: prompt } : entry
+      )
+      ragMessages = [{ role: "system", content: ragSystemPrompt }, ...ragMessages]
+    }
 
     const availableModels = await listLocalModels()
     const modelAvailable =
@@ -65,7 +135,7 @@ export async function POST(req: Request) {
     const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: requestedModel, messages, stream: true }),
+      body: JSON.stringify({ model: requestedModel, messages: ragMessages, stream: true }),
     })
 
     if (!res.ok) {
@@ -96,10 +166,7 @@ export async function POST(req: Request) {
     // Renvoie le flux NDJSON tel quel pour un rendu temps-réel côté client.
     return new Response(res.body, {
       status: 200,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
+      headers: streamHeaders,
     })
   } catch (error) {
     if (attemptedOllama) queueLog("error")

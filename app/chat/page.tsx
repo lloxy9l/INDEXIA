@@ -305,6 +305,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           model: modelId,
           messages,
+          ragEnabled,
         }),
       })
 
