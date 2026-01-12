@@ -177,10 +177,6 @@ export default function ChatPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [uploadedFiles, setUploadedFiles] = useState<
-    { name: string; size: number }[]
-  >([])
-  const [fileNotice, setFileNotice] = useState("")
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
   const [projects, setProjects] = useState<ProjectRecord[]>([])
@@ -237,7 +233,6 @@ export default function ChatPage() {
   >({})
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messageIdRef = useRef(0)
   const typingTimeoutsRef = useRef<number[]>([])
@@ -1004,32 +999,6 @@ export default function ChatPage() {
     }
   }, [])
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFilesSelected = (files: FileList | null) => {
-    if (!files) return
-    const mapped = Array.from(files).map((f) => ({
-      name: f.name,
-      size: f.size,
-    }))
-    setUploadedFiles((prev) => {
-      const next = [...prev, ...mapped]
-      if (next.length > 3) {
-        setFileNotice("Maximum 3 fichiers. Seuls les 3 premiers sont conservés.")
-      } else {
-        setFileNotice("")
-      }
-      return next.slice(0, 3)
-    })
-  }
-
-  const handleRemoveFile = (name: string) => {
-    setUploadedFiles((prev) => prev.filter((f) => f.name !== name))
-    setFileNotice("")
-  }
-
   const handleVoiceClick = () => {
     const recognition = recognitionRef.current
     if (!recognition) {
@@ -1470,24 +1439,6 @@ export default function ChatPage() {
       active = false
     }
   }, [router, selectedChatId])
-
-  const getFileIcon = (filename: string) => {
-    const ext = filename.split(".").pop()?.toLowerCase()
-    const isImage = ext && ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)
-    const isPdf = ext === "pdf"
-    const isDoc = ext && ["doc", "docx", "txt", "rtf", "odt", "md"].includes(ext)
-    const isZip = ext && ["zip", "rar", "7z", "tar", "gz"].includes(ext)
-    const isAudio = ext && ["mp3", "wav", "ogg", "flac", "m4a"].includes(ext)
-    const isVideo = ext && ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)
-
-    if (isImage) return <IconImage className="h-4 w-4" />
-    if (isPdf) return <IconPdf className="h-4 w-4" />
-    if (isDoc) return <IconDoc className="h-4 w-4" />
-    if (isZip) return <IconZip className="h-4 w-4" />
-    if (isAudio) return <IconAudio className="h-4 w-4" />
-    if (isVideo) return <IconVideo className="h-4 w-4" />
-    return <IconFile className="h-4 w-4" />
-  }
 
   const normalizeText = (value: string) =>
     value
@@ -2149,21 +2100,6 @@ export default function ChatPage() {
                   className="text-foreground placeholder:text-muted-foreground w-full resize-none border-none bg-transparent text-md leading-relaxed outline-none focus-visible:outline-none min-h-[44px] max-h-[200px]"
                 />
                 <div className="flex items-center gap-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    multiple
-                    onChange={(e) => handleFilesSelected(e.target.files)}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleFileClick}
-                    className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-transparent shadow-md transition cursor-pointer"
-                    aria-label="Joindre un fichier"
-                  >
-                    <IconPaperclip className="h-5 w-5" />
-                  </button>
                   <button
                     type="button"
                     className={`text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full border border-border/70 shadow-md transition cursor-pointer ${
@@ -2289,45 +2225,6 @@ export default function ChatPage() {
                   <IconArrowUp className="h-10 w-10" />
                 </Button>
                 </div>
-                {uploadedFiles.length > 0 && (
-                  <div className="animate-pop border-border bg-muted/40 text-foreground flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3">
-                    <div className="flex items-center gap-2 rounded-full bg-background px-3 py-2 text-sm font-medium shadow-sm">
-                      {getFileIcon(uploadedFiles[0].name)}
-                      {uploadedFiles.length === 1
-                        ? "1 fichier"
-                        : `${uploadedFiles.length} fichiers`}
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {uploadedFiles.slice(0, 3).map((file) => (
-                        <span
-                          key={file.name}
-                          className="flex items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm"
-                        >
-                          {getFileIcon(file.name)}
-                          <span>{file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFile(file.name)}
-                            className="text-muted-foreground hover:text-foreground flex items-center justify-center rounded-full transition cursor-pointer"
-                            aria-label={`Supprimer ${file.name}`}
-                          >
-                            <IconX className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                      {uploadedFiles.length > 3 && (
-                        <span className="rounded-full bg-background px-2 py-1 shadow-sm">
-                          +{uploadedFiles.length - 3} autres
-                        </span>
-                      )}
-                    </div>
-                    {fileNotice && (
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {fileNotice}
-                      </div>
-                    )}
-                  </div>
-                )}
                 <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
                   {[
                     {
@@ -2885,24 +2782,6 @@ function IconMenu(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
-function IconPaperclip(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M21.44 11.05 12.47 20a5 5 0 0 1-7.07-7.07l9-9a3.5 3.5 0 0 1 4.95 4.95l-9 9a2 2 0 0 1-2.83-2.83l8.5-8.5" />
-    </svg>
-  )
-}
-
 function IconChat(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -2995,151 +2874,6 @@ function IconMic(props: React.SVGProps<SVGSVGElement>) {
       <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
       <path d="M19 10v1a7 7 0 1 1-14 0v-1" />
       <line x1="12" x2="12" y1="19" y2="22" />
-    </svg>
-  )
-}
-
-function IconFile(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-    </svg>
-  )
-}
-
-function IconImage(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-4-4a2 2 0 0 0-3 0l-5 5" />
-    </svg>
-  )
-}
-
-function IconPdf(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <path d="M9 13h1c.6 0 1 .4 1 1v1c0 .6-.4 1-1 1H9z" />
-      <path d="M13 13h1.5c.8 0 1.5.7 1.5 1.5S15.3 16 14.5 16H13z" />
-      <path d="M17 16v-3h1" />
-    </svg>
-  )
-}
-
-function IconDoc(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <path d="M8 13h1.5a1.5 1.5 0 0 1 0 3H8z" />
-      <path d="M13.5 13h1a1.5 1.5 0 0 1 0 3h-1z" />
-      <path d="M18 16v-3" />
-    </svg>
-  )
-}
-
-function IconZip(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <path d="M9 7h1" />
-      <path d="M9 11h1" />
-      <path d="M9 15h1" />
-      <path d="M9 19h1" />
-    </svg>
-  )
-}
-
-function IconAudio(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M9 18V5l12-2v13" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="18" cy="16" r="3" />
-    </svg>
-  )
-}
-
-function IconVideo(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <rect x="2" y="7" width="14" height="10" rx="2" ry="2" />
-      <path d="m16 9 4-2v10l-4-2" />
     </svg>
   )
 }
