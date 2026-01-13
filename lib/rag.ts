@@ -95,16 +95,25 @@ export async function retrieveRelevantChunks(
   if (!access) return []
 
   const [chunks, documents] = await Promise.all([readChunks(), readDocuments()])
-  if (chunks.length === 0 || documents.length === 0) return []
+  if (chunks.length === 0) return []
 
-  const allowedDocumentIds = new Set(
-    documents.filter((doc) => canAccessDocument(access, doc)).map((doc) => doc.id)
-  )
-  if (allowedDocumentIds.size === 0) return []
-
-  const scopedChunks = chunks.filter((chunk) =>
-    allowedDocumentIds.has(chunk.document_ref)
-  )
+  let scopedChunks: ChunkRecord[] = []
+  if (access.role === "admin") {
+    if (documents.length === 0) {
+      scopedChunks = chunks
+    } else {
+      const allowedDocumentIds = new Set(documents.map((doc) => doc.id))
+      scopedChunks = chunks.filter((chunk) => allowedDocumentIds.has(chunk.document_ref))
+      if (scopedChunks.length === 0) scopedChunks = chunks
+    }
+  } else {
+    if (documents.length === 0) return []
+    const allowedDocumentIds = new Set(
+      documents.filter((doc) => canAccessDocument(access, doc)).map((doc) => doc.id)
+    )
+    if (allowedDocumentIds.size === 0) return []
+    scopedChunks = chunks.filter((chunk) => allowedDocumentIds.has(chunk.document_ref))
+  }
   if (scopedChunks.length === 0) return []
 
   const limit = Math.max(1, Math.floor(options.limit ?? DEFAULT_LIMIT))

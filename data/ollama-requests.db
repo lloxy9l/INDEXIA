@@ -54,5 +54,97 @@
     "model": "qwen3:4b",
     "durationMs": 1348,
     "createdAt": "2026-01-12T09:35:12.341Z"
+  },
+  {
+    "id": "4befd692-3715-4d35-ada5-2cb83373de9f",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 3461,
+    "createdAt": "2026-01-13T08:54:18.888Z"
+  },
+  {
+    "id": "528d1f1c-9a13-4f41-8ddc-ba80c1471bd0",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 754,
+    "createdAt": "2026-01-13T08:58:53.570Z"
+  },
+  {
+    "id": "8f977550-0929-486d-8457-2bbfa3027d4c",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 514,
+    "createdAt": "2026-01-13T08:59:14.104Z"
+  },
+  {
+    "id": "c5c72833-403f-4290-b0f6-574036331b09",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4321,
+    "createdAt": "2026-01-13T08:59:29.212Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "2c2da5db-0b26-4e0c-a097-f08f573e1343",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 3692,
+    "createdAt": "2026-01-13T09:00:14.620Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "414ebaab-5805-4448-abf5-5a98298bdb76",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4507,
+    "createdAt": "2026-01-13T09:00:52.014Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "f0df5dc4-4192-4b82-b0aa-4363d814c9a9",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4293,
+    "createdAt": "2026-01-13T09:02:29.043Z"
+  },
+  {
+    "id": "9a1b7729-889b-42d2-a0fd-14a6307861d7",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2989,
+    "createdAt": "2026-01-13T09:02:57.357Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "0a6fdcb1-f7a1-4ea6-b0ff-f7c1921d56bd",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 3230,
+    "createdAt": "2026-01-13T09:03:49.081Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "e6acf430-e8ee-4ad8-990c-bac9e61e74f9",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 6382,
+    "createdAt": "2026-01-13T09:10:26.500Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "4574dfe6-2f0e-422f-9dcf-16f3591f9117",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4141,
+    "createdAt": "2026-01-13T09:11:00.948Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "27d86514-6482-468c-96b8-81224592871a",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4251,
+    "createdAt": "2026-01-13T09:11:51.806Z",
+    "pipeline": "ragStandard"
   }
 ]

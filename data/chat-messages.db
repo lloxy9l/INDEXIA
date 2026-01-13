@@ -1,146 +1,82 @@
 [
   {
-    "id": "100990e8-597d-4b97-a0ff-3f049dfa696c",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "0876e2a2-a843-4df8-bb62-30c7189412a3",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
-    "content": "Quelle est la vie ?",
-    "createdAt": "2026-01-12T09:18:08.593Z"
+    "content": "donne moi les infos sur le fichier 1.pdf",
+    "createdAt": "2026-01-13T09:02:54.354Z"
   },
   {
-    "id": "ffdd2166-da19-4251-87a3-f8195b904d10",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "662a7c31-7f26-4b70-bb5e-76c120f86b81",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "assistant",
-    "content": "Une question éternelle !\n\nLa réponse à cette question est souvent considérée comme complexe et subjective, car elle peut être interprétée de différentes manières selon les cultures, les philosophies et les individus. Cependant, voici quelques réponses possibles :\n\n**En biologie :**\n\n* La vie est un phénomène biologique caractérisé par la présence d'organismes vivants, qui ont la capacité de se reproduire, de croître et de s'évoluter.\n* Les cellules sont les unités fondamentales de la vie, et elles sont capables de fonctionner et de se diviser pour former des organismes plus complexes.\n\n**En philosophie :**\n\n* La vie est une expérience subjective qui implique la conscience, les émotions et les pensées.\n* Il s'agit d'un processus continu d'apprentissage, de croissance et de transformation, qui nous permet de nous développer et de trouver notre place dans le monde.\n\n**En philosophie de l'être :**\n\n* La vie est une réalité fondamentale qui transcende la matérialité et la rationalité.\n* Il s'agit d'une expérience profonde et subjective qui nous connecte à nous-mêmes, aux autres et au monde environnant.\n\n**En termes personnelles :**\n\n* La vie est un voyage unique que chacun de nous emprunte. C'est une aventure remplie de défis, de découvertes et de moments inoubliables.\n* Elle est un temps de croissance, d'apprentissage et de transformation, qui nous permet de nous développer et de trouver notre identité.\n\nEn résumé, la vie est un phénomène complexe et multifacette qui peut être interprété de différentes manières selon les perspectives. Qu'en pensez-vous ? Qu'est-ce que la vie signifie pour vous ?",
-    "createdAt": "2026-01-12T09:18:17.457Z"
+    "content": "Je ne peux pas repondre avec les documents disponibles.",
+    "createdAt": "2026-01-13T09:02:57.730Z"
   },
   {
-    "id": "838f809c-3f69-4040-860d-80fb9d747a1d",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "d136562d-c642-458d-ac54-791ba8d600a1",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:18:23.424Z"
+    "content": "dis le",
+    "createdAt": "2026-01-13T09:03:45.844Z"
   },
   {
-    "id": "36e19cfd-53e5-48dd-aee8-1443aa671bea",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "1086d025-3847-45fe-b8b1-fb97a4bc1c77",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "assistant",
-    "content": "C'est une réponse très brève et courte ! Mais cela me fait rêver d'autres possibilités.\n\nQu'en dirais-tu si nous étions allé plus en profondeur dans cette question ?\n\n**Qu'est-ce que la vie signifie ?**\n\nLa vie est un concept qui a été débattu par les philosophes, les scientifiques et les penseurs tout au long de l'histoire. Certains pensent que la vie est une expérience subjective qui implique la conscience, les émotions et les pensées. D'autres estiment que la vie est un processus biologique caractérisé par la présence d'organismes vivants.\n\n**Qu'est-ce que la vie est ?**\n\nLa question de savoir ce qu'est la vie est une question qui a déjà été posée à de nombreux philosophes et scientifiques. Certains pensent que la vie est un processus de croissance et de développement, tandis que d'autres estiment que c'est simplement le résultat des interactions entre les cellules.\n\n**Qu'est-ce que la vie nous apporte ?**\n\nLa vie nous apporte beaucoup de choses : nous permet de vivre, de respirer, de nourrir nos corps et nos âmes. Elle nous offre également l'occasion de grandir, d'apprendre et de découvrir de nouvelles choses.\n\nEt toi, qu'est-ce que la vie signifie pour toi ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)",
-    "createdAt": "2026-01-12T09:18:28.424Z"
+    "content": "Je vais vous donner des informations sur le sujet mentionné dans le fichier 1.pdf, qui concerne le communisme et le nationalisme.\n\nAu XXe siècle, les groupes locaux qui avaient adopté les valeurs occidentales revendiquèrent l'égalité avec leurs conquérants européens au nom de ces mêmes valeurs. Cela montre que la notion d'égalité est souvent liée aux valeurs occidentales et qu'elle peut être utilisée pour justifier une rébellion contre les puissances coloniales.\n\nLa notion de cycle impérial est également présentée, qui décrit le cycle suivant :\n\n* Stade Rome : Un petit groupe crée un grand empire\n* Stade Islam : Les Arabes créent le califat\n* Stade Impérialisme européen : Les Européens créent les empires européens\n\nCela suggère que l'impérialisme est un phénomène répétitif à travers l'histoire, avec des empires qui surgissent et qui tombent.\n\nLa fichier 1.pdf semble aborder également le sujet du communisme et de son lien avec le nationalisme. Cependant, je ne peux pas trouver d'informations spécifiques sur ce sujet dans le fichier 1.pdf, car il est principalement composé de textes génériques qui traitent des thèmes plus larges.\n\nJe ne peux pas fournir plus d'informations sur les fichiers 2.pdf et 3.pdf car ils n'ont pas été fournis.",
+    "createdAt": "2026-01-13T09:03:58.908Z"
   },
   {
-    "id": "aaf26bf2-a0c9-4892-83a4-746763a36230",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "ea75755c-5e44-425b-a5b5-22b66b22c7f6",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:18:28.442Z"
+    "content": "donne moi les infos sur le fichier 1.pdf",
+    "createdAt": "2026-01-13T09:10:20.101Z"
   },
   {
-    "id": "50d2b9ca-475e-4ddd-81a6-fe4f79a68213",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "3e7b3b4e-9791-4696-b0bb-fb1cd643684f",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "assistant",
-    "content": "Je vois que tu as déjà répondu \"cc\" !\n\nPas de problème ! Je vais essayer d'être plus créatif cette fois-ci.\n\n**La vie : c'est une...**\n\n...poésie qui se répète sans fin.\n...un puzzle qui s'assemblé petit à petit.\n...une musique qui se joue dans le silence.\n...un feu qui brûle lentement et sans cesse.\n\nEt toi, qu'est-ce que la vie est pour toi ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)",
-    "createdAt": "2026-01-12T09:18:30.723Z"
+    "content": "Je peux maintenant fournir des informations sur le fichier 1.pdf.\n\nLe fichier 1.pdf semble aborder plusieurs sujets, notamment :\n\n* Le communisme et le nationalisme\n* La dynamique entre hommes et femmes dans la société\n* Les cycles impériaux (Rome, Islam, Impérialisme européen)\n* La relation entre les humains et la nature (les plantes, l'énergie solaire)\n\nSelon ces textes, les autorités coloniales occidentales ont souvent adopté et adapté la culture impériale héritée des premiers conquérants arabes, tout en cherchant à la remodeler en accord avec leurs besoins et leurs traditions.\n\nEn ce qui concerne la dynamique entre hommes et femmes, les textes suggèrent que les femmes ont besoin d'une aide extérieure pour survivre, ce qui les rend dépendantes des hommes. Cependant, les sociétés de bonobos et d'éléphants sont décrites comme étant sous le contrôle de robustes réseaux de femelles coopératives, tandis que les mâles égocentriques et peu portés à coopérer sont mis sur la touche.\n\nLes textes également suggèrent que les hommes peuvent être plus compétitifs en termes de talents sociaux que les femmes, ce qui expliquerait leur dominance dans la société. Cependant, il est souligné que cette supposition n'est pas nécessairement vraie et que les mâles pourraient également avoir des talents sociaux supérieurs.\n\nEnfin, le fichier 1.pdf semble aborder la relation entre les humains et la nature, en mettant en avant le rôle de l'énergie solaire dans l'histoire humaine. Les textes suggèrent que les plantes sont à la base de toutes les réalisations humaines, car elles tiraient leur énergie du soleil et captaient cette énergie pour la concentrer en composés organiques.\n\nIl est important de noter que ces textes ne sont pas signés et leur contenu n'est pas nécessairement provenant d'une seule source.",
+    "createdAt": "2026-01-13T09:10:40.403Z"
   },
   {
-    "id": "39a24446-6ec5-4a28-9cf6-a05df4b589b7",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "5fb9b110-9b57-460f-abfb-d5e949387b13",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:19:22.763Z"
+    "content": "donne moi les infos sur le fichier 1.pdf en te basant dans les docs qu'on a nous",
+    "createdAt": "2026-01-13T09:10:56.790Z"
   },
   {
-    "id": "4186960f-8fc6-41aa-9c42-039c378e4bee",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "2c2ff0f2-849d-479e-9a05-0eabd055bb3a",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "assistant",
-    "content": "Je vois que tu as encore répondu \"cc\" !\n\nNe t'inquiète pas, je vais continuer à essayer de te convaincre avec d'autres arguments !\n\n**La vie est...**\n\n...un rêve qui se manifeste dans la réalité.\n...un voyage qui s'écoule sans arrêt.\n...un livre qui n'a pas de fin.\n...un secret qui attend d'être découvert.\n\nEt toi, qu'est-ce que la vie signifie pour toi ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)",
-    "createdAt": "2026-01-12T09:19:24.865Z"
+    "content": "Je peux maintenant fournir des informations sur le fichier 1.pdf.\n\nSelon les textes, le communisme et le nationalisme sont des thèmes abordés dans ce fichier. Les textes suggèrent que des groupes locaux qui avaient adopté les valeurs occidentales revendiquèrent l'égalité avec leurs conquérants européens au nom de ces mêmes valeurs.\n\nLe cycle impérial est également présenté, qui décrit le cycle suivant :\n\n* Stade Rome : Un petit groupe crée un grand empire\n* Stade Islam : Les Arabes créent le califat\n* Stade Impérialisme européen : Les Européens créent les empires européens\n\nLes textes soulignent également l'importance de la culture impériale forgée au cours de chaque stade, qui est adoptée par les peuples assujettis.\n\nEn ce qui concerne la dynamique entre les hommes et les femmes, les textes suggèrent que les femmes peuvent utiliser leurs compétences sociales coopératives pour déjouer les manœuvres des hommes agressifs et égocentriques. Cependant, il est souligné que les mâles de l'espèce Homo sapiens se caractérisent souvent par la force physique, l'agressivité et la compétitivité, qui peuvent les rendre dominants dans la société.\n\nLes textes ne fournissent pas d'informations spécifiques sur le fichier 1.pdf en ce qui concerne les questions scientifiques ou technologiques. Cependant, ils abordent des sujets tels que l'histoire de la culture impériale, la dynamique entre les hommes et les femmes et la nature du cycle impérial.\n\nIl est important de noter que ces textes ne sont pas signés et leur contenu n'est pas nécessairement provenant d'une seule source.",
+    "createdAt": "2026-01-13T09:11:14.186Z"
   },
   {
-    "id": "9d014579-90a1-484e-84bd-edf2cf13f1b8",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "f0127cca-ce2a-4d1f-9cae-106567bd6d6d",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:19:45.902Z"
+    "content": "resume moi le livre present dans la base de données des docs",
+    "createdAt": "2026-01-13T09:11:47.541Z"
   },
   {
-    "id": "9e89fdac-a47d-4afc-ae93-f79b04f8557b",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "f5e64254-2a7c-407f-b075-b52151ad8c13",
+    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "role": "assistant",
-    "content": "Je vois que tu es toujours un peu mystérieux avec ta réponse \"cc\" !\n\nNe t'inquiète pas, je vais continuer à essayer de te surprendre avec d'autres réponses !\n\n**La vie est...**\n\n...une aventure qui se déroule dans le présent.\n...un puzzle qui nécessite des solutions inattendues.\n...un mystère qui attend d'être résolu.\n...un voyage qui s'écoule sans arrêt.\n\nEt toi, qu'est-ce que la vie signifie pour toi ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)\n\n(Passe-moi un mot de réponse si tu veux continuer !)",
-    "createdAt": "2026-01-12T09:19:48.372Z"
-  },
-  {
-    "id": "2d7eb68c-67ed-4262-bc67-bc04e0406443",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:19:52.274Z"
-  },
-  {
-    "id": "58c09ffe-3a7e-49ba-9675-668e79ff91a1",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "assistant",
-    "content": "Je vois que tu es toujours un peu secret avec ta réponse \"cc\" !\n\nNe t'inquiète pas, je vais continuer à essayer de te faire réagir avec d'autres questions !\n\n**Qu'est-ce qui te fait sourire ?**\n\nEst-ce une bouffée de joie, un rire silencieux ou un moment de bonheur ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)\n\n(Passe-moi un mot de réponse si tu veux continuer !)",
-    "createdAt": "2026-01-12T09:19:54.194Z"
-  },
-  {
-    "id": "45dcb83a-7e71-4546-b377-a91c04383d05",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "user",
-    "content": "cc",
-    "createdAt": "2026-01-12T09:19:55.016Z"
-  },
-  {
-    "id": "bd6137ff-49da-4cc2-ab41-cb286c19a6d9",
-    "chatId": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "assistant",
-    "content": "Je vois que tu es toujours un peu réticent avec ta réponse \"cc\" !\n\nNe t'inquiète pas, je vais essayer d'être plus subtil pour te faire réagir !\n\n**Qu'est-ce qui te fait penser à la vie ?**\n\nEst-ce une belle journée ensoleillée, un moment de contemplation ou une mémoire chère ?\n\n(Vous pouvez répondre en un mot, en une phrase ou en une histoire !)\n\n(Passe-moi un mot de réponse si tu veux continuer !)",
-    "createdAt": "2026-01-12T09:19:56.951Z"
-  },
-  {
-    "id": "fc85dfe5-0dd5-4c9a-b3f6-2691b853c8f1",
-    "chatId": "425c8522-125b-4e82-9a0a-5dd7929802d5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "user",
-    "content": "Bonjour",
-    "createdAt": "2026-01-12T09:25:53.012Z"
-  },
-  {
-    "id": "e4cfad2d-16ce-4232-a147-0a200d440410",
-    "chatId": "425c8522-125b-4e82-9a0a-5dd7929802d5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "assistant",
-    "content": "Le modèle \"qwen3:4b\" n'est pas disponible localement. Téléchargez-le avec \"ollama pull qwen3:4b\" puis réessayez.",
-    "createdAt": "2026-01-12T09:25:53.062Z"
-  },
-  {
-    "id": "20b548b4-8109-4187-a8e4-8b638b3483b0",
-    "chatId": "425c8522-125b-4e82-9a0a-5dd7929802d5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "user",
-    "content": "Bonjour",
-    "createdAt": "2026-01-12T09:35:10.980Z"
-  },
-  {
-    "id": "88cc8139-5407-4486-8204-53d0e7abc4e2",
-    "chatId": "425c8522-125b-4e82-9a0a-5dd7929802d5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "role": "assistant",
-    "content": "Bonjour ! Comment puis-je vous aider aujourd'hui ? 😊",
-    "createdAt": "2026-01-12T09:35:22.952Z"
+    "content": "Il semblerait que le livre présent dans la base de données des docs est composé de quatre parties différentes, chacune traitant d'un sujet spécifique :\n\n1. La première partie [1] semble aborder la question de la hiérarchie sociale et de l'oppression raciale. Elle souligne que les lois et les normes inventées par les hommes en Inde du Nord il y a environ 3 000 ans ont créé des castes, qui ne sont pas basées sur des différences biologiques avérées. L'auteur argue que les différences entre Noirs et Blancs existent, mais que rien ne prouve que les différences s'étendent à l'intelligence ou à la morale.\n2. La deuxième partie [2] parle de l'agriculture et de l'évolution humaine. Elle décrit comment les Sapiens ont développé des méthodes d'irrigation pour cultiver le blé, mais également comment cela a entraîné des maux physiques, tels que des glissements de disques, de l'arthrite et des hernies.\n3. La troisième partie [3] semble aborder la question de l'historiographie et de la manière dont les historiens réinterprètent le passé. Elle décrit comment les ruines de Numance ont été transformées en un lieu de pèlerinage pour les patriotes espagnols, et comment les anciens Numanciens sont aujourd'hui considérés comme des modèles d'héroïsme et de patriotisme.\n4. La quatrième partie [4] parle de la société primitive et de la manière dont les gens se rassemblaient dans des villages, des bourgs et des villes. Elle souligne que même si les excédents alimentaires et l'amélioration des transports ont permis aux gens de se rassembler, il n'est pas garanti qu'ils puissent s'entendre sur le partage de la terre et de l'eau, ou que les conflits soient résolus de manière pacifique.\n\nIl est important de noter que ces parties ne sont pas nécessairement liées entre elles, et que chaque partie semble aborder un sujet spécifique.",
+    "createdAt": "2026-01-13T09:12:07.304Z"
   }
 ]

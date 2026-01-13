@@ -1,18 +1,10 @@
 [
   {
-    "id": "f32abd97-8dfc-4da4-8be5-d56b9ba24ba3",
+    "id": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
     "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
     "projectId": null,
-    "title": "llama3.2",
-    "createdAt": "2026-01-12T09:18:08.566Z",
-    "updatedAt": "2026-01-12T09:25:31.176Z"
-  },
-  {
-    "id": "425c8522-125b-4e82-9a0a-5dd7929802d5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "projectId": null,
-    "title": "qwen3",
-    "createdAt": "2026-01-12T09:25:32.581Z",
-    "updatedAt": "2026-01-12T09:25:43.114Z"
+    "title": "Nouveau chat 1",
+    "createdAt": "2026-01-13T09:02:54.339Z",
+    "updatedAt": "2026-01-13T09:02:54.339Z"
   }
 ]

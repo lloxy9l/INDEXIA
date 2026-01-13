@@ -34,5 +34,17 @@
     "uploader": "user",
     "confidentiality": "Public interne",
     "status": "Indexé"
+  },
+  {
+    "id": "DOC-FS-1.pdf",
+    "name": "1.pdf",
+    "storedName": "1.pdf",
+    "type": "PDF",
+    "category": "Non classé",
+    "size": 4924854,
+    "uploadedAt": "2026-01-13T08:52:03.712Z",
+    "uploader": "user",
+    "confidentiality": "Très sensible",
+    "status": "Indexé"
   }
 ]
