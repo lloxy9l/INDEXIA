@@ -1,5 +1,9 @@
+import { cookies } from "next/headers"
+
+import { AUTH_COOKIE_NAME, readUsers, validateAuthCookie } from "@/lib/auth"
 import { LLM_CATALOG } from "@/lib/llm-catalog"
 import { appendOllamaRequest, createOllamaRequest } from "@/lib/ollama-requests"
+import { accessContextFromUser } from "@/lib/permissions"
 import { retrieveRelevantChunks } from "@/lib/rag"
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"
@@ -129,7 +133,28 @@ export async function POST(req: Request) {
         )
       }
 
-      const sources = await retrieveRelevantChunks(question, { limit: 4 })
+      const cookieStore = await cookies()
+      const email = validateAuthCookie(cookieStore.get(AUTH_COOKIE_NAME)?.value)
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Non authentifie" }), {
+          status: 401,
+          headers: jsonHeaders,
+        })
+      }
+      const users = await readUsers()
+      const user = users.find((entry) => entry.email === email)
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Non authentifie" }), {
+          status: 401,
+          headers: jsonHeaders,
+        })
+      }
+
+      const access = accessContextFromUser(user)
+      const sources = await retrieveRelevantChunks(question, {
+        limit: 4,
+        access,
+      })
       if (sources.length === 0) {
         return buildImmediateStreamResponse(
           "Je ne peux pas repondre avec les documents disponibles."

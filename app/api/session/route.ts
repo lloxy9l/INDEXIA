@@ -22,6 +22,7 @@ export async function GET() {
       admin: user.admin ?? false,
       firstName: user.firstName ?? null,
       lastName: user.lastName ?? null,
+      service: user.service ?? null,
     })
   } catch (error) {
     console.error("Erreur validation session", error)

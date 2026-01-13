@@ -1,8 +1,10 @@
 import fs from "fs/promises"
 import path from "path"
 import { pathToFileURL } from "url"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
+import { AUTH_COOKIE_NAME, readUsers, validateAuthCookie } from "@/lib/auth"
 import {
   readDocuments,
   upsertDocument,
@@ -18,6 +20,7 @@ import {
   chunk_text_with_bert,
 } from "@/lib/chunking"
 import { readChunks, replaceChunksForDocument, writeChunks } from "@/lib/chunks"
+import { accessContextFromUser, canAccessDocument } from "@/lib/permissions"
 import { PDFParse } from "pdf-parse"
 
 export const runtime = "nodejs"
@@ -38,6 +41,16 @@ const supportedTextExtensions = new Set([
   ".log",
 ])
 const supportedPdfExtensions = new Set([".pdf"])
+
+async function getAccessContext() {
+  const cookieStore = await cookies()
+  const email = validateAuthCookie(cookieStore.get(AUTH_COOKIE_NAME)?.value)
+  if (!email) return null
+  const users = await readUsers()
+  const user = users.find((entry) => entry.email === email)
+  if (!user) return null
+  return accessContextFromUser(user)
+}
 
 function normalizeName(value: string | null) {
   if (!value) return null
@@ -94,6 +107,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await getAccessContext()
+    if (!access) {
+      return NextResponse.json({ error: "Non authentifie" }, { status: 401 })
+    }
+
     const url = new URL(request.url)
     const resolvedParams = await params
     const rawId =
@@ -109,6 +127,9 @@ export async function GET(
 
     if (!document) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (!canAccessDocument(access, document)) {
+      return NextResponse.json({ error: "Acces refuse" }, { status: 403 })
     }
 
     const allChunks = await readChunks()
@@ -138,6 +159,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await getAccessContext()
+    if (!access) {
+      return NextResponse.json({ error: "Non authentifie" }, { status: 401 })
+    }
+
     const url = new URL(request.url)
     const resolvedParams = await params
     const rawId =
@@ -159,6 +185,9 @@ export async function POST(
 
     if (!document) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (!canAccessDocument(access, document)) {
+      return NextResponse.json({ error: "Acces refuse" }, { status: 403 })
     }
 
     const storedName = document.storedName || document.name

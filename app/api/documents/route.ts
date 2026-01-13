@@ -1,8 +1,10 @@
 import fs from "fs/promises"
 import path from "path"
 import { pathToFileURL } from "url"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
+import { AUTH_COOKIE_NAME, readUsers, validateAuthCookie } from "@/lib/auth"
 import {
   readDocuments,
   upsertDocument,
@@ -18,6 +20,7 @@ import {
   chunk_text_with_bert,
 } from "@/lib/chunking"
 import { readChunks, replaceChunksForDocument, writeChunks } from "@/lib/chunks"
+import { accessContextFromUser, filterDocumentsForAccess } from "@/lib/permissions"
 import { PDFParse } from "pdf-parse"
 
 export const runtime = "nodejs"
@@ -38,6 +41,16 @@ const supportedTextExtensions = new Set([
   ".log",
 ])
 const supportedPdfExtensions = new Set([".pdf"])
+
+async function getAccessContext() {
+  const cookieStore = await cookies()
+  const email = validateAuthCookie(cookieStore.get(AUTH_COOKIE_NAME)?.value)
+  if (!email) return null
+  const users = await readUsers()
+  const user = users.find((entry) => entry.email === email)
+  if (!user) return null
+  return accessContextFromUser(user)
+}
 
 function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes)) return "N/A"
@@ -103,6 +116,11 @@ async function buildFilePath(originalName: string) {
 
 export async function GET() {
   try {
+    const access = await getAccessContext()
+    if (!access) {
+      return NextResponse.json({ error: "Non authentifie" }, { status: 401 })
+    }
+
     await ensureUploadDir()
     const [entries, storedDocuments] = await Promise.all([
       fs.readdir(uploadDir, { withFileTypes: true }),
@@ -152,7 +170,8 @@ export async function GET() {
       await writeDocuments(documents)
     }
 
-    const payload = documents.map(toApiDoc)
+    const scopedDocuments = filterDocumentsForAccess(documents, access)
+    const payload = scopedDocuments.map(toApiDoc)
     return NextResponse.json({ documents: payload })
   } catch (error) {
     console.error("Erreur lors de la lecture des documents", error)

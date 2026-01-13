@@ -10,6 +10,7 @@ export type UserRecord = {
   admin?: boolean
   firstName?: string
   lastName?: string
+  service?: string
 }
 
 export const DB_PATH = path.join(process.cwd(), "data", "users.db")

@@ -1,4 +1,6 @@
 import { readChunks, type ChunkRecord } from "@/lib/chunks"
+import { readDocuments } from "@/lib/documents"
+import { canAccessDocument, type AccessContext } from "@/lib/permissions"
 
 export type RagSource = {
   id: string
@@ -12,6 +14,7 @@ type RagOptions = {
   limit?: number
   minScore?: number
   maxChars?: number
+  access?: AccessContext
 }
 
 const DEFAULT_LIMIT = 4
@@ -88,14 +91,27 @@ export async function retrieveRelevantChunks(
   const normalizedQuery = normalizeForSearch(query)
   if (queryTokens.length === 0) return []
 
-  const chunks = await readChunks()
-  if (chunks.length === 0) return []
+  const access = options.access
+  if (!access) return []
+
+  const [chunks, documents] = await Promise.all([readChunks(), readDocuments()])
+  if (chunks.length === 0 || documents.length === 0) return []
+
+  const allowedDocumentIds = new Set(
+    documents.filter((doc) => canAccessDocument(access, doc)).map((doc) => doc.id)
+  )
+  if (allowedDocumentIds.size === 0) return []
+
+  const scopedChunks = chunks.filter((chunk) =>
+    allowedDocumentIds.has(chunk.document_ref)
+  )
+  if (scopedChunks.length === 0) return []
 
   const limit = Math.max(1, Math.floor(options.limit ?? DEFAULT_LIMIT))
   const minScore = Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE))
   const maxChars = Math.max(200, Math.floor(options.maxChars ?? DEFAULT_MAX_CHARS))
 
-  const scored = chunks
+  const scored = scopedChunks
     .map((chunk) => {
       const score = scoreChunk(chunk.text, queryTokens, normalizedQuery)
       return score >= minScore ? chunkToSource(chunk, score, maxChars) : null

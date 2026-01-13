@@ -1,8 +1,11 @@
 import fs from "fs/promises"
 import path from "path"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
-import { readDocuments } from "@/lib/documents"
+import { AUTH_COOKIE_NAME, readUsers, validateAuthCookie } from "@/lib/auth"
+import { readDocuments, type DocumentRecord } from "@/lib/documents"
+import { accessContextFromUser, canAccessDocument } from "@/lib/permissions"
 
 export const runtime = "nodejs"
 
@@ -12,6 +15,38 @@ function normalizeName(value: string | null) {
   if (!value) return null
   const withoutPrefix = value.replace(/^DOC-FS-/, "")
   return path.basename(withoutPrefix)
+}
+
+function resolveDocument(
+  documents: DocumentRecord[],
+  id: string,
+  nameFromQuery: string | null
+): DocumentRecord | null {
+  const fromId = normalizeName(id)
+  const fromQuery = normalizeName(nameFromQuery)
+
+  return (
+    documents.find(
+      (doc) =>
+        doc.id === id ||
+        doc.name === nameFromQuery ||
+        doc.storedName === nameFromQuery ||
+        doc.name === fromId ||
+        doc.storedName === fromId ||
+        doc.name === fromQuery ||
+        doc.storedName === fromQuery
+    ) || null
+  )
+}
+
+async function getAccessContext() {
+  const cookieStore = await cookies()
+  const email = validateAuthCookie(cookieStore.get(AUTH_COOKIE_NAME)?.value)
+  if (!email) return null
+  const users = await readUsers()
+  const user = users.find((entry) => entry.email === email)
+  if (!user) return null
+  return accessContextFromUser(user)
 }
 
 function guessMimeType(fileName: string) {
@@ -41,6 +76,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await getAccessContext()
+    if (!access) {
+      return NextResponse.json({ error: "Non authentifie" }, { status: 401 })
+    }
+
     const url = new URL(request.url)
     const lastSegment = url.pathname.split("/").filter(Boolean).pop()
     const resolvedParams = await params
@@ -50,44 +90,27 @@ export async function GET(
       return NextResponse.json({ error: "Identifiant manquant" }, { status: 400 })
     }
 
-    const nameFromQuery = url.searchParams.get("name")
-    const fromId = normalizeName(id)
-    const fromQuery = normalizeName(nameFromQuery)
-
     const documents = await readDocuments()
-    const fromDb = documents.find(
-      (doc) =>
-        doc.id === id ||
-        doc.name === nameFromQuery ||
-        doc.storedName === nameFromQuery ||
-        doc.name === fromId ||
-        doc.storedName === fromId
-    )
-    const dbCandidates = fromDb
-      ? [
-          normalizeName(fromDb.storedName),
-          normalizeName(fromDb.name),
-        ]
-      : []
+    const nameFromQuery = url.searchParams.get("name")
+    const document = resolveDocument(documents, id, nameFromQuery)
+    if (!document) {
+      return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (!canAccessDocument(access, document)) {
+      return NextResponse.json({ error: "Acces refuse" }, { status: 403 })
+    }
 
-    const candidates = [fromId, fromQuery, ...dbCandidates].filter(Boolean) as string[]
+    const fileName = document.storedName || document.name
     await fs.mkdir(uploadDir, { recursive: true })
 
     let fileBuffer: Buffer | null = null
-    let fileName = ""
-
-    for (const candidate of candidates) {
-      const filePath = path.join(uploadDir, candidate)
-      try {
-        fileBuffer = await fs.readFile(filePath)
-        fileName = candidate
-        break
-      } catch {
-        // try next candidate
-      }
+    try {
+      fileBuffer = await fs.readFile(path.join(uploadDir, fileName))
+    } catch {
+      fileBuffer = null
     }
 
-    if (!fileBuffer || !fileName) {
+    if (!fileBuffer) {
       return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
     }
 

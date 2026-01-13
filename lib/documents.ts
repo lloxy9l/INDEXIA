@@ -7,6 +7,7 @@ export type DocumentRecord = {
   storedName: string
   type: string
   category: string
+  service?: string
   size: number
   uploadedAt: string
   uploader: string
