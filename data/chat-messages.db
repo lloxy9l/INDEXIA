@@ -78,5 +78,37 @@
     "role": "assistant",
     "content": "Il semblerait que le livre présent dans la base de données des docs est composé de quatre parties différentes, chacune traitant d'un sujet spécifique :\n\n1. La première partie [1] semble aborder la question de la hiérarchie sociale et de l'oppression raciale. Elle souligne que les lois et les normes inventées par les hommes en Inde du Nord il y a environ 3 000 ans ont créé des castes, qui ne sont pas basées sur des différences biologiques avérées. L'auteur argue que les différences entre Noirs et Blancs existent, mais que rien ne prouve que les différences s'étendent à l'intelligence ou à la morale.\n2. La deuxième partie [2] parle de l'agriculture et de l'évolution humaine. Elle décrit comment les Sapiens ont développé des méthodes d'irrigation pour cultiver le blé, mais également comment cela a entraîné des maux physiques, tels que des glissements de disques, de l'arthrite et des hernies.\n3. La troisième partie [3] semble aborder la question de l'historiographie et de la manière dont les historiens réinterprètent le passé. Elle décrit comment les ruines de Numance ont été transformées en un lieu de pèlerinage pour les patriotes espagnols, et comment les anciens Numanciens sont aujourd'hui considérés comme des modèles d'héroïsme et de patriotisme.\n4. La quatrième partie [4] parle de la société primitive et de la manière dont les gens se rassemblaient dans des villages, des bourgs et des villes. Elle souligne que même si les excédents alimentaires et l'amélioration des transports ont permis aux gens de se rassembler, il n'est pas garanti qu'ils puissent s'entendre sur le partage de la terre et de l'eau, ou que les conflits soient résolus de manière pacifique.\n\nIl est important de noter que ces parties ne sont pas nécessairement liées entre elles, et que chaque partie semble aborder un sujet spécifique.",
     "createdAt": "2026-01-13T09:12:07.304Z"
+  },
+  {
+    "id": "6a633e01-755f-459a-b5c3-db659c8c9fb1",
+    "chatId": "27389077-e647-4dd3-9c62-b47890cea83d",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "donne moi la météo",
+    "createdAt": "2026-01-13T13:18:29.287Z"
+  },
+  {
+    "id": "f0645fa8-3ddd-4a5e-80e7-7ddb14c8fd12",
+    "chatId": "27389077-e647-4dd3-9c62-b47890cea83d",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Désolé, mais je suis un modèle de langage numérique et n'ai pas accès à des informations en temps réel sur la météo. Cependant, je peux vous suggérer quelques options pour obtenir les informations météorologiques actuelles :\n\n1. **Météo France** : Vous pouvez visiter le site officiel de Météo France (meteo.fr) ou télécharger l'application mobile pour obtenir les dernières actualités météorologiques.\n2. **Météo Web** : Vous pouvez également utiliser des sites web spécialisés comme Le Figaro Météo (lefigaro.fr/meteo), France Info (franceinfo.fr/meteo) ou Météo Actu (meteo-actu.com).\n3. **Applications mobiles** : Il existe de nombreuses applications mobiles qui fournissent des informations météorologiques en temps réel, comme Dark Sky, Weather Underground ou Météo.\n\nIl vous faudra simplement saisir le code postal ou la ville de votre emplacement pour obtenir les dernières actualités météorologiques.",
+    "createdAt": "2026-01-13T13:18:40.332Z"
+  },
+  {
+    "id": "762911f0-7f25-453d-b775-bf36c4f1e6d6",
+    "chatId": "27389077-e647-4dd3-9c62-b47890cea83d",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Résume moi le livre samoins",
+    "createdAt": "2026-01-13T13:19:04.002Z"
+  },
+  {
+    "id": "6790d3e9-9511-4d1b-9e1c-e0ae7da5a102",
+    "chatId": "27389077-e647-4dd3-9c62-b47890cea83d",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Je ne peux pas repondre avec les documents disponibles.",
+    "createdAt": "2026-01-13T13:19:08.922Z"
   }
 ]

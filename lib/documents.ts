@@ -8,6 +8,7 @@ export type DocumentRecord = {
   type: string
   category: string
   service?: string
+  services?: string[]
   size: number
   uploadedAt: string
   uploader: string

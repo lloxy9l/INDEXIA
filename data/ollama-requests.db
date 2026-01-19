@@ -146,5 +146,20 @@
     "durationMs": 4251,
     "createdAt": "2026-01-13T09:11:51.806Z",
     "pipeline": "ragStandard"
+  },
+  {
+    "id": "661425c7-eff8-419c-b655-5a3a29f72364",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 3322,
+    "createdAt": "2026-01-13T13:18:32.620Z"
+  },
+  {
+    "id": "e63a9a59-eacc-4327-879e-122bc6f05b11",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4492,
+    "createdAt": "2026-01-13T13:19:08.508Z",
+    "pipeline": "ragStandard"
   }
 ]

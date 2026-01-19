@@ -4,10 +4,11 @@ import {
   AUTH_COOKIE_NAME,
   createAuthCookieValue,
   createNewUser,
-  hashPassword,
   readUsers,
   writeUsers,
 } from "@/lib/auth"
+import { normalizeService } from "@/lib/permissions"
+import { SERVICE_OPTIONS } from "@/lib/services"
 
 function authResponse(body: unknown, status: number, email: string) {
   const cookieValue = createAuthCookieValue(email)
@@ -26,10 +27,17 @@ export async function POST(request: Request) {
     const body = await request.json()
     const email = (body?.email as string | undefined)?.trim().toLowerCase()
     const password = body?.password as string | undefined
+    const service = (body?.service as string | undefined)?.trim()
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email et mot de passe requis" },
+        { status: 400 }
+      )
+    }
+    if (!service) {
+      return NextResponse.json(
+        { error: "Service requis" },
         { status: 400 }
       )
     }
@@ -41,17 +49,32 @@ export async function POST(request: Request) {
       )
     }
 
-  const users = await readUsers()
-  const existing = users.find((u) => u.email === email)
+    const normalizedService = normalizeService(service)
+    const allowedServices = new Map(
+      SERVICE_OPTIONS.map((label) => [normalizeService(label), label] as const).filter(
+        (entry): entry is [string, string] => Boolean(entry[0])
+      )
+    )
+    const canonicalService =
+      normalizedService ? allowedServices.get(normalizedService) : null
+    if (!canonicalService) {
+      return NextResponse.json(
+        { error: "Service invalide" },
+        { status: 400 }
+      )
+    }
 
-  if (existing) {
+    const users = await readUsers()
+    const existing = users.find((u) => u.email === email)
+
+    if (existing) {
       return NextResponse.json(
         { error: "Un compte existe déjà avec cet email" },
         { status: 409 }
       )
-  }
+    }
 
-    const newUser = createNewUser(email, password)
+    const newUser = createNewUser(email, password, canonicalService)
 
     users.push(newUser)
     await writeUsers(users)

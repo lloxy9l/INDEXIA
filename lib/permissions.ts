@@ -63,12 +63,20 @@ export function accessContextFromUser(user: {
   }
 }
 
-function resolveDocumentService(document: DocumentRecord): string | null {
+function resolveDocumentServices(document: DocumentRecord): string[] {
+  if (Array.isArray(document.services) && document.services.length > 0) {
+    const normalized = document.services
+      .map((service) => normalizeService(service))
+      .filter((service): service is string => Boolean(service))
+    return Array.from(new Set(normalized))
+  }
+
   const rawService =
     typeof document.service === "string" && document.service.trim()
       ? document.service
       : document.category
-  return normalizeService(rawService)
+  const normalized = normalizeService(rawService)
+  return normalized ? [normalized] : []
 }
 
 export function canAccessDocument(
@@ -78,9 +86,9 @@ export function canAccessDocument(
   if (access.role === "admin") return true
   const confidentiality = normalizeConfidentiality(document.confidentiality)
   if (confidentiality === "confidential") return false
-  const documentService = resolveDocumentService(document)
-  if (!documentService || !access.service) return false
-  return documentService === access.service
+  const documentServices = resolveDocumentServices(document)
+  if (documentServices.length === 0 || !access.service) return false
+  return documentServices.includes(access.service)
 }
 
 export function filterDocumentsForAccess(

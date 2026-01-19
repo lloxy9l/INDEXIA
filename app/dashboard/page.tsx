@@ -23,6 +23,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import { LLM_CATALOG, modelKeyFromName } from "@/lib/llm-catalog"
+import { SERVICE_OPTIONS } from "@/lib/services"
 import { cn } from "@/lib/utils"
 import {
   SidebarInset,
@@ -594,6 +595,18 @@ function toDashboardDocument(
   fallbackConfidentiality: string,
   fallbackUploader = "Upload"
 ): DashboardDocument {
+  const services =
+    Array.isArray(doc?.services) && doc.services.length > 0
+      ? doc.services.filter((service: any) => typeof service === "string")
+      : []
+  const categoryLabel =
+    services.length > 0
+      ? services.join(", ")
+      : typeof doc?.service === "string" && doc.service
+        ? doc.service
+        : typeof doc?.category === "string" && doc.category
+          ? doc.category
+          : fallbackCategory || "Non classé"
   const size =
     typeof doc?.size === "number"
       ? formatFileSize(doc.size)
@@ -613,10 +626,7 @@ function toDashboardDocument(
     name:
       typeof doc?.name === "string" && doc.name ? doc.name : "Sans nom",
     type: typeof doc?.type === "string" && doc.type ? doc.type : "FILE",
-    category:
-      typeof doc?.category === "string" && doc.category
-        ? doc.category
-        : fallbackCategory || "Non classé",
+    category: categoryLabel,
     size,
     uploadedAt,
     uploader:
@@ -693,7 +703,7 @@ export default function Page() {
     [documentsState]
   )
   const [uploadFiles, setUploadFiles] = React.useState<File[]>([])
-  const [uploadCategory, setUploadCategory] = React.useState("")
+  const [uploadServices, setUploadServices] = React.useState<string[]>([])
   const [uploadTags, setUploadTags] = React.useState("")
   const [uploadConfidentiality, setUploadConfidentiality] = React.useState("Public interne")
   const [uploadingDocs, setUploadingDocs] = React.useState(false)
@@ -711,6 +721,14 @@ export default function Page() {
     if (emailPrefix) return emailPrefix
     return "Upload"
   }, [session])
+
+  const toggleUploadService = React.useCallback((service: string) => {
+    setUploadServices((prev) =>
+      prev.includes(service)
+        ? prev.filter((item) => item !== service)
+        : [...prev, service]
+    )
+  }, [])
 
   React.useEffect(() => {
     let active = true
@@ -1091,13 +1109,17 @@ export default function Page() {
       setUploadError("Ajoutez au moins un fichier")
       return
     }
+    if (uploadServices.length === 0) {
+      setUploadError("Choisissez au moins un service")
+      return
+    }
     setUploadingDocs(true)
     setUploadError("")
     setUploadMessage("")
 
     const formData = new FormData()
     uploadFiles.slice(0, 10).forEach((file) => formData.append("files", file))
-    if (uploadCategory) formData.append("category", uploadCategory)
+    formData.append("services", JSON.stringify(uploadServices))
     if (uploadTags) formData.append("tags", uploadTags)
     if (uploadConfidentiality) {
       formData.append("confidentiality", uploadConfidentiality)
@@ -1115,7 +1137,12 @@ export default function Page() {
       }
       const incoming = Array.isArray(payload?.documents) ? payload.documents : []
       const mapped = incoming.map((doc: any) =>
-        toDashboardDocument(doc, uploadCategory, uploadConfidentiality, uploaderName)
+        toDashboardDocument(
+          doc,
+          uploadServices.join(", "),
+          uploadConfidentiality,
+          uploaderName
+        )
       )
 
       setDocumentsState((prev) => mergeDocumentsLists(prev, mapped))
@@ -1140,7 +1167,7 @@ export default function Page() {
     }
   }, [
     uploadFiles,
-    uploadCategory,
+    uploadServices,
     uploadTags,
     uploadConfidentiality,
     selectedDocId,
@@ -2076,7 +2103,7 @@ export default function Page() {
                                 <TableRow>
                                   <TableHead>Nom</TableHead>
                                   <TableHead>Type</TableHead>
-                                  <TableHead>Service</TableHead>
+                                  <TableHead>Services</TableHead>
                                   <TableHead>Taille</TableHead>
                                   <TableHead>Uploadé le</TableHead>
                                   <TableHead>Par</TableHead>
@@ -2182,7 +2209,7 @@ export default function Page() {
                               <div>{selectedDoc?.size}</div>
                               <div className="font-medium">Type</div>
                               <div>{selectedDoc?.type}</div>
-                              <div className="font-medium">Catégorie</div>
+                              <div className="font-medium">Services</div>
                               <div>{selectedDoc?.category}</div>
                               <div className="font-medium">Confidentialité</div>
                               <div>{selectedDoc?.confidentiality}</div>
@@ -2336,12 +2363,26 @@ export default function Page() {
                               )}
                             </div>
                             <div className="grid gap-2">
-                              <label className="text-sm font-medium">Service / catégorie</label>
-                              <Input
-                                placeholder="IT, RH, Finance, R&D..."
-                                value={uploadCategory}
-                                onChange={(event) => setUploadCategory(event.target.value)}
-                              />
+                              <label className="text-sm font-medium">
+                                Services autorisés
+                              </label>
+                              <div className="grid gap-2 md:grid-cols-2">
+                                {SERVICE_OPTIONS.map((service) => (
+                                  <label
+                                    key={service}
+                                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                                  >
+                                    <Checkbox
+                                      checked={uploadServices.includes(service)}
+                                      onCheckedChange={() => toggleUploadService(service)}
+                                    />
+                                    <span>{service}</span>
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Les utilisateurs rattachés à ces services pourront consulter le document.
+                              </div>
                             </div>
                             <div className="grid gap-2">
                               <label className="text-sm font-medium">Tags</label>

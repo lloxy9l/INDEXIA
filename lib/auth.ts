@@ -70,7 +70,11 @@ export function validateAuthCookie(raw?: string) {
   }
 }
 
-export function createNewUser(email: string, password: string): UserRecord {
+export function createNewUser(
+  email: string,
+  password: string,
+  service: string
+): UserRecord {
   const randomLastName = Math.floor(10000000 + Math.random() * 90000000).toString()
   return {
     id: randomUUID(),
@@ -80,5 +84,6 @@ export function createNewUser(email: string, password: string): UserRecord {
     admin: false,
     firstName: "user",
     lastName: randomLastName,
+    service,
   }
 }

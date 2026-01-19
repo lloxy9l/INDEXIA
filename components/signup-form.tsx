@@ -11,6 +11,14 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SERVICE_OPTIONS } from "@/lib/services"
 import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useState } from "react"
 
@@ -21,6 +29,7 @@ export function SignupForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
+  const [service, setService] = useState(SERVICE_OPTIONS[0] ?? "")
   const [status, setStatus] = useState<{
     type: "error" | "success" | null
     message: string
@@ -49,6 +58,10 @@ export function SignupForm({
       setStatus({ type: "error", message: "Les mots de passe ne correspondent pas" })
       return
     }
+    if (!service) {
+      setStatus({ type: "error", message: "Veuillez choisir un service" })
+      return
+    }
 
     setIsLoading(true)
     setStatus({ type: null, message: "" })
@@ -58,7 +71,7 @@ export function SignupForm({
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, service }),
       })
       const payload = await response.json()
 
@@ -74,6 +87,7 @@ export function SignupForm({
       setEmail("")
       setPassword("")
       setConfirm("")
+      setService(SERVICE_OPTIONS[0] ?? "")
     } catch (error) {
       setStatus({ type: "error", message: "Impossible de créer le compte" })
     } finally {
@@ -135,6 +149,24 @@ export function SignupForm({
                 </Field>
                 <FieldDescription>
                   Doit contenir au moins 8 caractères.
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="service">Service</FieldLabel>
+                <Select value={service} onValueChange={setService}>
+                  <SelectTrigger id="service">
+                    <SelectValue placeholder="Choisissez un service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Ce service détermine les documents auxquels vous pourrez accéder.
                 </FieldDescription>
               </Field>
               <Field>

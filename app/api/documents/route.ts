@@ -20,7 +20,12 @@ import {
   chunk_text_with_bert,
 } from "@/lib/chunking"
 import { readChunks, replaceChunksForDocument, writeChunks } from "@/lib/chunks"
-import { accessContextFromUser, filterDocumentsForAccess } from "@/lib/permissions"
+import {
+  accessContextFromUser,
+  filterDocumentsForAccess,
+  normalizeService,
+} from "@/lib/permissions"
+import { SERVICE_OPTIONS } from "@/lib/services"
 import { PDFParse } from "pdf-parse"
 
 export const runtime = "nodejs"
@@ -41,6 +46,11 @@ const supportedTextExtensions = new Set([
   ".log",
 ])
 const supportedPdfExtensions = new Set([".pdf"])
+const allowedServiceMap = new Map(
+  SERVICE_OPTIONS.map((label) => [normalizeService(label), label] as const).filter(
+    (entry): entry is [string, string] => Boolean(entry[0])
+  )
+)
 
 async function getAccessContext() {
   const cookieStore = await cookies()
@@ -72,6 +82,39 @@ function isSupportedTextFile(fileName: string) {
 
 function isPdfFile(fileName: string) {
   return supportedPdfExtensions.has(path.extname(fileName).toLowerCase())
+}
+
+function parseServices(formData: FormData): string[] {
+  const rawEntries = formData
+    .getAll("services")
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+
+  let candidates = rawEntries
+  if (rawEntries.length === 1 && rawEntries[0].startsWith("[")) {
+    try {
+      const parsed = JSON.parse(rawEntries[0])
+      if (Array.isArray(parsed)) {
+        candidates = parsed.filter((item): item is string => typeof item === "string")
+      }
+    } catch {
+      candidates = rawEntries
+    }
+  }
+
+  const seen = new Set<string>()
+  const resolved: string[] = []
+  candidates.forEach((value) => {
+    const normalized = normalizeService(value)
+    if (!normalized || seen.has(normalized)) return
+    const canonical = allowedServiceMap.get(normalized)
+    if (!canonical) return
+    seen.add(normalized)
+    resolved.push(canonical)
+  })
+
+  return resolved
 }
 
 async function extractTextFromBuffer(buffer: Buffer, fileName: string) {
@@ -210,10 +253,18 @@ export async function POST(request: Request) {
       typeof formData.get("uploader") === "string" && formData.get("uploader")
         ? String(formData.get("uploader"))
         : "Dashboard"
+    const services = parseServices(formData)
     const confidentiality =
       typeof formData.get("confidentiality") === "string"
         ? (formData.get("confidentiality") as string)
         : "Public interne"
+
+    if (services.length === 0) {
+      return NextResponse.json(
+        { error: "Au moins un service doit etre selectionne" },
+        { status: 400 }
+      )
+    }
 
     await ensureUploadDir()
     const existingDocuments = await readDocuments()
@@ -274,7 +325,9 @@ export async function POST(request: Request) {
             path.extname(storedName).replace(".", "").toUpperCase() ||
             file.type ||
             "FILE",
-          category,
+          category: services[0] ?? category,
+          service: services[0],
+          services,
           size: buffer.length,
           uploadedAt: new Date().toISOString(),
           uploader,
