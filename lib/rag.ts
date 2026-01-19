@@ -38,7 +38,7 @@ function tokenizeForSearch(value: string): string[] {
 
 function scoreChunk(chunkText: string, queryTokens: string[], queryText: string): number {
   if (queryTokens.length === 0) return 0
-  const lower = chunkText.toLowerCase()
+  const lower = normalizeForSearch(chunkText)
   let score = 0
 
   for (const token of queryTokens) {

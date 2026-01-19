@@ -46,5 +46,21 @@
     "uploader": "user",
     "confidentiality": "Très sensible",
     "status": "Indexé"
+  },
+  {
+    "id": "DOC-FS-data.txt",
+    "name": "data.txt",
+    "storedName": "data.txt",
+    "type": "TXT",
+    "category": "Operations",
+    "service": "Operations",
+    "services": [
+      "Marketing"
+    ],
+    "size": 3804,
+    "uploadedAt": "2026-01-19T09:28:23.474Z",
+    "uploader": "user",
+    "confidentiality": "Très sensible",
+    "status": "Indexé"
   }
 ]

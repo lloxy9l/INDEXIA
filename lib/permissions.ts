@@ -84,8 +84,6 @@ export function canAccessDocument(
   document: DocumentRecord
 ): boolean {
   if (access.role === "admin") return true
-  const confidentiality = normalizeConfidentiality(document.confidentiality)
-  if (confidentiality === "confidential") return false
   const documentServices = resolveDocumentServices(document)
   if (documentServices.length === 0 || !access.service) return false
   return documentServices.includes(access.service)
