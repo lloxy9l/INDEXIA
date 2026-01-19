@@ -118,6 +118,7 @@ type DashboardDocument = {
   name: string
   type: string
   category: string
+  services?: string[]
   size: string
   uploadedAt: string
   uploader: string
@@ -627,6 +628,7 @@ function toDashboardDocument(
       typeof doc?.name === "string" && doc.name ? doc.name : "Sans nom",
     type: typeof doc?.type === "string" && doc.type ? doc.type : "FILE",
     category: categoryLabel,
+    services,
     size,
     uploadedAt,
     uploader:
@@ -709,6 +711,10 @@ export default function Page() {
   const [uploadingDocs, setUploadingDocs] = React.useState(false)
   const [uploadMessage, setUploadMessage] = React.useState("")
   const [uploadError, setUploadError] = React.useState("")
+  const [editServices, setEditServices] = React.useState<string[]>([])
+  const [updateDocError, setUpdateDocError] = React.useState("")
+  const [updateDocMessage, setUpdateDocMessage] = React.useState("")
+  const [updatingDoc, setUpdatingDoc] = React.useState(false)
   const [deleteDocError, setDeleteDocError] = React.useState("")
   const [deletingDocumentId, setDeletingDocumentId] = React.useState("")
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -724,6 +730,14 @@ export default function Page() {
 
   const toggleUploadService = React.useCallback((service: string) => {
     setUploadServices((prev) =>
+      prev.includes(service)
+        ? prev.filter((item) => item !== service)
+        : [...prev, service]
+    )
+  }, [])
+
+  const toggleEditService = React.useCallback((service: string) => {
+    setEditServices((prev) =>
       prev.includes(service)
         ? prev.filter((item) => item !== service)
         : [...prev, service]
@@ -942,6 +956,22 @@ export default function Page() {
     return !Number.isNaN(created) && created >= thirtyDaysAgo
   }).length
   const selectedDoc = documentsState.find((doc) => doc.id === selectedDocId)
+
+  React.useEffect(() => {
+    if (!selectedDoc) {
+      setEditServices([])
+      setUpdateDocError("")
+      setUpdateDocMessage("")
+      return
+    }
+    const services =
+      Array.isArray(selectedDoc.services) && selectedDoc.services.length > 0
+        ? selectedDoc.services
+        : []
+    setEditServices(services)
+    setUpdateDocError("")
+    setUpdateDocMessage("")
+  }, [selectedDoc])
   const indexDocs = React.useMemo(
     () =>
       documentsFs.map((doc) => ({
@@ -1173,6 +1203,51 @@ export default function Page() {
     selectedDocId,
     uploaderName,
   ])
+
+  const handleUpdateDocumentServices = React.useCallback(async () => {
+    if (!selectedDoc) return
+    if (editServices.length === 0) {
+      setUpdateDocError("Choisissez au moins un service")
+      return
+    }
+
+    setUpdatingDoc(true)
+    setUpdateDocError("")
+    setUpdateDocMessage("")
+
+    try {
+      const res = await fetch("/api/documents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedDoc.id, services: editServices }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || "Mise a jour echouee")
+      }
+
+      const updated = payload?.document
+      if (updated) {
+        const mapped = toDashboardDocument(
+          updated,
+          editServices.join(", "),
+          selectedDoc.confidentiality,
+          selectedDoc.uploader
+        )
+        setDocumentsState((prev) =>
+          prev.map((doc) => (doc.id === mapped.id ? { ...doc, ...mapped } : doc))
+        )
+      }
+      setUpdateDocMessage("Services mis a jour")
+    } catch (error) {
+      console.error("Erreur lors de la mise a jour du document", error)
+      setUpdateDocError(
+        error instanceof Error ? error.message : "Mise a jour echouee"
+      )
+    } finally {
+      setUpdatingDoc(false)
+    }
+  }, [selectedDoc, editServices])
 
   const handleDeleteDocument = React.useCallback(
     async (docId: string, docName: string) => {
@@ -2234,6 +2309,47 @@ export default function Page() {
                             </CardContent>
                           </Card>
                         </div>
+                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
+                          <CardHeader>
+                            <CardTitle>Services autorisés</CardTitle>
+                            <CardDescription>
+                              Mettre à jour l’accès par service
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {SERVICE_OPTIONS.map((service) => (
+                                <label
+                                  key={service}
+                                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                                >
+                                  <Checkbox
+                                    checked={editServices.includes(service)}
+                                    onCheckedChange={() => toggleEditService(service)}
+                                    disabled={!selectedDoc}
+                                  />
+                                  <span>{service}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {updateDocError && (
+                              <div className="text-sm text-destructive">
+                                {updateDocError}
+                              </div>
+                            )}
+                            {updateDocMessage && !updateDocError && (
+                              <div className="text-sm text-emerald-600">
+                                {updateDocMessage}
+                              </div>
+                            )}
+                            <Button
+                              onClick={handleUpdateDocumentServices}
+                              disabled={!selectedDoc || updatingDoc}
+                            >
+                              {updatingDoc ? "Mise à jour..." : "Mettre à jour"}
+                            </Button>
+                          </CardContent>
+                        </Card>
                         <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                           <CardHeader>
                             <CardTitle>Chunks</CardTitle>

@@ -62,6 +62,14 @@ async function getAccessContext() {
   return accessContextFromUser(user)
 }
 
+async function getCurrentUser() {
+  const cookieStore = await cookies()
+  const email = validateAuthCookie(cookieStore.get(AUTH_COOKIE_NAME)?.value)
+  if (!email) return null
+  const users = await readUsers()
+  return users.find((entry) => entry.email === email) ?? null
+}
+
 function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes)) return "N/A"
   const KB = 1024
@@ -100,6 +108,42 @@ function parseServices(formData: FormData): string[] {
       }
     } catch {
       candidates = rawEntries
+    }
+  }
+
+  const seen = new Set<string>()
+  const resolved: string[] = []
+  candidates.forEach((value) => {
+    const normalized = normalizeService(value)
+    if (!normalized || seen.has(normalized)) return
+    const canonical = allowedServiceMap.get(normalized)
+    if (!canonical) return
+    seen.add(normalized)
+    resolved.push(canonical)
+  })
+
+  return resolved
+}
+
+function parseServicesFromBody(payload: any): string[] {
+  if (!payload) return []
+  let candidates: string[] = []
+
+  if (Array.isArray(payload.services)) {
+    candidates = payload.services.filter((item: any) => typeof item === "string")
+  } else if (typeof payload.services === "string") {
+    const raw = payload.services.trim()
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          candidates = parsed.filter((item: any) => typeof item === "string")
+        } else {
+          candidates = [raw]
+        }
+      } catch {
+        candidates = [raw]
+      }
     }
   }
 
@@ -353,6 +397,69 @@ export async function POST(request: Request) {
     console.error("Erreur lors de l'upload des documents", error)
     return NextResponse.json(
       { error: "Upload impossible pour le moment" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: "Non authentifie" }, { status: 401 })
+    }
+    if (!currentUser.admin) {
+      return NextResponse.json({ error: "Acces refuse" }, { status: 403 })
+    }
+
+    const body = await request.json().catch(() => ({}))
+    const id =
+      typeof body?.id === "string" && body.id.trim().length ? body.id.trim() : ""
+    const name =
+      typeof body?.name === "string" && body.name.trim().length ? body.name.trim() : ""
+
+    if (!id && !name) {
+      return NextResponse.json(
+        { error: "id ou name requis" },
+        { status: 400 }
+      )
+    }
+
+    const services = parseServicesFromBody(body)
+    if (services.length === 0) {
+      return NextResponse.json(
+        { error: "Au moins un service doit etre selectionne" },
+        { status: 400 }
+      )
+    }
+
+    const documents = await readDocuments()
+    const target =
+      documents.find((doc) => doc.id === id) ||
+      documents.find((doc) => doc.name === name) ||
+      documents.find((doc) => doc.storedName === name)
+
+    if (!target) {
+      return NextResponse.json(
+        { error: "Document introuvable" },
+        { status: 404 }
+      )
+    }
+
+    const updated: DocumentRecord = {
+      ...target,
+      services,
+      service: services[0],
+      category: services[0] ?? target.category,
+    }
+
+    await writeDocuments(upsertDocument(documents, updated))
+
+    return NextResponse.json({ document: updated })
+  } catch (error) {
+    console.error("Erreur lors de la mise a jour du document", error)
+    return NextResponse.json(
+      { error: "Mise a jour impossible pour le moment" },
       { status: 500 }
     )
   }
