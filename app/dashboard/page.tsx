@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { JetBrains_Mono } from "next/font/google"
 
 import {
@@ -660,6 +662,7 @@ function mergeDocumentsLists(
 }
 
 export default function Page() {
+  const router = useRouter()
   const pieGradientBase = React.useId().replace(/:/g, "")
   const pipelineGradientId = `${React.useId().replace(/:/g, "")}-pipeline`
   const topUsersGradientId = `${React.useId().replace(/:/g, "")}-users`
@@ -682,7 +685,9 @@ export default function Page() {
     firstName?: string | null
     lastName?: string | null
     email?: string
+    admin?: boolean
   } | null>(null)
+  const [checkingSession, setCheckingSession] = React.useState(true)
   const [activeSection, setActiveSection] = React.useState("Dashboard Admin")
   const [usersState, setUsersState] = React.useState<DashboardUser[]>([])
   const [loadingUsers, setLoadingUsers] = React.useState(true)
@@ -750,14 +755,21 @@ export default function Page() {
       try {
         const res = await fetch("/api/session")
         const payload = await res.json().catch(() => null)
-        if (!active || !res.ok || !payload?.email) return
+        if (!active) return
+        if (!res.ok || !payload?.email) {
+          router.replace("/login")
+          return
+        }
         setSession({
           email: payload.email,
+          admin: payload.admin ?? false,
           firstName: payload.firstName ?? null,
           lastName: payload.lastName ?? null,
         })
       } catch (error) {
         console.error("Erreur lors du chargement de la session", error)
+      } finally {
+        if (active) setCheckingSession(false)
       }
     }
     loadSession()
@@ -810,6 +822,12 @@ export default function Page() {
 
   React.useEffect(() => {
     let isMounted = true
+    if (checkingSession || !session?.admin) {
+      if (isMounted) setLoadingUsers(false)
+      return () => {
+        isMounted = false
+      }
+    }
 
     const loadUsers = async () => {
       setLoadingUsers(true)
@@ -848,7 +866,7 @@ export default function Page() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [checkingSession, session?.admin])
 
   const fetchDocumentsFromApi = React.useCallback(async () => {
     try {
@@ -1915,7 +1933,58 @@ export default function Page() {
 
   return (
     <>
-      <SidebarProvider
+      {!checkingSession && session?.admin === false ? (
+        <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_#fff7ed_0%,_transparent_60%),linear-gradient(135deg,_#ecfeff_0%,_#f8fafc_45%,_#fff1f2_100%)] px-6 py-12">
+          <div className="absolute -top-32 right-8 h-64 w-64 rounded-full bg-gradient-to-br from-amber-200/70 via-orange-200/50 to-rose-200/60 blur-3xl" />
+          <div className="absolute -bottom-24 left-6 h-56 w-56 rounded-full bg-gradient-to-tr from-cyan-200/70 via-sky-200/50 to-emerald-200/60 blur-3xl" />
+          <Card className="relative z-10 w-full max-w-2xl border border-primary/10 bg-white/80 shadow-lg backdrop-blur">
+            <CardHeader className="space-y-3">
+              <Badge
+                className={cn(
+                  "w-fit bg-amber-100 text-amber-800",
+                  jetBrainsMono.className
+                )}
+              >
+                Acces restreint
+              </Badge>
+              <CardTitle className="text-2xl md:text-3xl">
+                Ce dashboard est reserve aux administrateurs
+              </CardTitle>
+              <CardDescription className="text-base">
+                Ton compte n'a pas encore les droits pour cette section. Si tu as
+                besoin d'acces, un administrateur peut mettre a jour ton role.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="rounded-xl border border-primary/10 bg-gradient-to-br from-white via-slate-50 to-amber-50 p-4 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-foreground">
+                    Statut actuel
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs uppercase tracking-widest",
+                      jetBrainsMono.className
+                    )}
+                  >
+                    Utilisateur
+                  </span>
+                </div>
+                <p className="mt-2">
+                  Pas de souci, tu peux continuer a utiliser le chat et les
+                  fonctionnalites autorisees.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button asChild>
+                  <Link href="/chat">Retour au chat</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <SidebarProvider
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -3267,6 +3336,7 @@ export default function Page() {
         </div>
       )}
     </SidebarProvider>
+      )}
     </>
   )
 }

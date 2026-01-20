@@ -287,5 +287,12 @@
     "durationMs": 172,
     "createdAt": "2026-01-19T09:36:08.582Z",
     "pipeline": "ragStandard"
+  },
+  {
+    "id": "439076c7-cec3-460c-9ce8-b2865795ff7e",
+    "status": "error",
+    "model": "llama3.2",
+    "durationMs": 2,
+    "createdAt": "2026-01-20T08:17:54.760Z"
   }
 ]
