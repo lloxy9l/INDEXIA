@@ -55,5 +55,29 @@
     "model": "llama3.2",
     "durationMs": 7265,
     "createdAt": "2026-01-21T09:50:15.847Z"
+  },
+  {
+    "id": "954fd7a8-5923-4b7e-90a0-8806df244ae4",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4842,
+    "createdAt": "2026-01-21T10:15:04.850Z",
+    "pipeline": "rerank"
+  },
+  {
+    "id": "5f8d5d97-146c-44cb-9a53-7989b762c765",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2579,
+    "createdAt": "2026-01-21T10:15:24.112Z",
+    "pipeline": "rerank"
+  },
+  {
+    "id": "6ca34856-9c1d-41c9-9b00-e194ef173709",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 3365,
+    "createdAt": "2026-01-21T10:15:56.457Z",
+    "pipeline": "agent"
   }
 ]

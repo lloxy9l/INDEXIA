@@ -4,12 +4,12 @@ import { AUTH_COOKIE_NAME, readUsers, validateAuthCookie } from "@/lib/auth"
 import { LLM_CATALOG } from "@/lib/llm-catalog"
 import { appendOllamaRequest, createOllamaRequest } from "@/lib/ollama-requests"
 import { accessContextFromUser } from "@/lib/permissions"
-import { retrieveRelevantChunks } from "@/lib/rag"
+import { retrieveRagSources } from "@/lib/rag"
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"
 
 const normalizeModelName = (name: string) => name.split(":")[0].toLowerCase()
-const DEFAULT_PIPELINE = "ragStandard"
+const DEFAULT_PIPELINE = "standard"
 
 const jsonHeaders = { "Content-Type": "application/json" }
 const streamHeaders = {
@@ -53,7 +53,7 @@ const normalizePipeline = (raw: unknown, ragEnabled: boolean) => {
     const normalized = raw.trim().toLowerCase()
     if (!normalized) return ragEnabled ? DEFAULT_PIPELINE : undefined
     if (["ragstandard", "standard", "rag"].includes(normalized)) {
-      return "ragStandard"
+      return "standard"
     }
     if (
       [
@@ -66,7 +66,13 @@ const normalizePipeline = (raw: unknown, ragEnabled: boolean) => {
         "rag+re-ranking",
       ].includes(normalized)
     ) {
-      return "ragRerank"
+      return "rerank"
+    }
+    if (["multi", "multi-query", "ragmulti", "rag_multi"].includes(normalized)) {
+      return "multi"
+    }
+    if (["agent", "ragagent", "rag_agent"].includes(normalized)) {
+      return "agent"
     }
     return raw
   }
@@ -151,9 +157,10 @@ export async function POST(req: Request) {
       }
 
       const access = accessContextFromUser(user)
-      const sources = await retrieveRelevantChunks(question, {
+      const sources = await retrieveRagSources(question, {
         limit: 4,
         access,
+        pipeline: requestPipeline as any,
       })
       if (sources.length === 0) {
         return buildImmediateStreamResponse(

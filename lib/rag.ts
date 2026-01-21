@@ -10,11 +10,14 @@ export type RagSource = {
   score: number
 }
 
+export type RagPipeline = "standard" | "rerank" | "multi" | "agent"
+
 type RagOptions = {
   limit?: number
   minScore?: number
   maxChars?: number
   access?: AccessContext
+  pipeline?: RagPipeline
 }
 
 const DEFAULT_LIMIT = 4
@@ -129,4 +132,138 @@ export async function retrieveRelevantChunks(
 
   scored.sort(sortByScoreDesc)
   return scored.slice(0, limit)
+}
+
+const STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "avec",
+  "au",
+  "aux",
+  "ce",
+  "ces",
+  "dans",
+  "de",
+  "des",
+  "du",
+  "en",
+  "et",
+  "for",
+  "from",
+  "is",
+  "la",
+  "le",
+  "les",
+  "of",
+  "ou",
+  "par",
+  "pour",
+  "sur",
+  "the",
+  "to",
+  "un",
+  "une",
+  "with",
+])
+
+function buildMultiQueries(query: string): string[] {
+  const tokens = tokenizeForSearch(query)
+  if (tokens.length === 0) return []
+  const longTokens = tokens.filter((token) => token.length >= 4)
+  const keywords = longTokens.filter((token) => !STOPWORDS.has(token)).slice(0, 6)
+  const variants = new Set<string>([query])
+  if (keywords.length >= 2) variants.add(keywords.join(" "))
+  if (tokens.length >= 3) variants.add(tokens.slice(0, 5).join(" "))
+  return Array.from(variants).filter((value) => value.trim().length > 0)
+}
+
+function rerankSources(sources: RagSource[], query: string): RagSource[] {
+  const queryTokens = tokenizeForSearch(query)
+  const normalizedQuery = normalizeForSearch(query)
+  const reranked = sources.map((source) => {
+    const normalizedText = normalizeForSearch(source.text)
+    const tokenHits = queryTokens.filter((token) => normalizedText.includes(token)).length
+    const exactBoost = normalizedText.includes(normalizedQuery) ? 6 : 0
+    return {
+      ...source,
+      score: source.score + tokenHits * 2 + exactBoost,
+    }
+  })
+  reranked.sort(sortByScoreDesc)
+  return reranked
+}
+
+export async function retrieveRagSources(
+  query: string,
+  options: RagOptions = {}
+): Promise<RagSource[]> {
+  const pipeline = options.pipeline ?? "standard"
+  const limit = Math.max(1, Math.floor(options.limit ?? DEFAULT_LIMIT))
+
+  if (pipeline === "standard") {
+    return retrieveRelevantChunks(query, options)
+  }
+
+  if (pipeline === "rerank") {
+    const candidates = await retrieveRelevantChunks(query, {
+      ...options,
+      limit: Math.max(limit * 3, limit),
+      minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
+    })
+    return rerankSources(candidates, query).slice(0, limit)
+  }
+
+  if (pipeline === "multi") {
+    const queries = buildMultiQueries(query)
+    const results = await Promise.all(
+      queries.map((variant) =>
+        retrieveRelevantChunks(variant, {
+          ...options,
+          limit: Math.max(limit * 2, limit),
+          minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
+        })
+      )
+    )
+    const merged = new Map<string, RagSource>()
+    results.flat().forEach((source) => {
+      const existing = merged.get(source.id)
+      if (!existing || source.score > existing.score) {
+        merged.set(source.id, source)
+      }
+    })
+    return rerankSources(Array.from(merged.values()), query).slice(0, limit)
+  }
+
+  const initial = await retrieveRelevantChunks(query, {
+    ...options,
+    limit: Math.max(limit * 2, limit),
+    minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
+  })
+  if (initial.length >= limit) {
+    return rerankSources(initial, query).slice(0, limit)
+  }
+
+  const followUpQuery = [
+    query,
+    ...initial.map((source) => source.documentName.split(".")[0]),
+  ]
+    .join(" ")
+    .trim()
+  const followUp = await retrieveRelevantChunks(followUpQuery, {
+    ...options,
+    limit: Math.max(limit * 2, limit),
+    minScore: 1,
+  })
+  const combined = new Map<string, RagSource>()
+  ;[...initial, ...followUp].forEach((source) => {
+    const existing = combined.get(source.id)
+    if (!existing || source.score > existing.score) {
+      combined.set(source.id, source)
+    }
+  })
+  return rerankSources(Array.from(combined.values()), query).slice(0, limit)
 }

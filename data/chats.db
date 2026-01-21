@@ -14,5 +14,13 @@
     "title": "Nouveau chat 2",
     "createdAt": "2026-01-21T09:38:59.867Z",
     "updatedAt": "2026-01-21T09:38:59.867Z"
+  },
+  {
+    "id": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "projectId": null,
+    "title": "Nouveau chat 1",
+    "createdAt": "2026-01-21T10:14:59.979Z",
+    "updatedAt": "2026-01-21T10:14:59.979Z"
   }
 ]

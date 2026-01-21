@@ -318,5 +318,53 @@
     "role": "assistant",
     "content": "**Résumé benchmark clair**\n\n* **Temps de réponse :**\n + Le pipeline \"Standard\" a un temps moyen de 1622 ms.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") ont des temps moyens inférieurs à 0 ms, ce qui suggère qu'ils sont très rapides.\n* **Hallucinations :**\n + Le pipeline \"Standard\" présente des hallucinations pour le modèle \"Llama 3\" à 7.4%.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") n'ont pas de hallucinations ou les ont au niveau de zéro.\n* **Pertinence pipelines :**\n + Le pipeline \"Standard\" est la référence pour la pertinence, avec une note de 0,9 pour le jour 0.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") n'ont pas de pertinence ou les ont inférieure à celle du pipeline \"Standard\".\n\nEn résumé, le pipeline \"Standard\" présente des hallucinations et des temps moyens lourds, mais est la référence pour la pertinence. Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" sont très rapides et présentent des performances excellentes en termes de pertinence.",
     "createdAt": "2026-01-21T09:50:25.545Z"
+  },
+  {
+    "id": "b06e8c8c-f505-406c-9bda-8de0f4f2a73b",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "user",
+    "content": "hello ça va ?",
+    "createdAt": "2026-01-21T10:14:59.993Z"
+  },
+  {
+    "id": "24ccfc4c-2cb7-4be6-978f-7e1ef3ff45c5",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "assistant",
+    "content": "Bonjour ! C'est là que je vais te répondre.\n\n Ça va ? [source: polytech.txt]",
+    "createdAt": "2026-01-21T10:15:05.562Z"
+  },
+  {
+    "id": "caec9487-3c5b-4116-bfee-cb34c16aec2c",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "user",
+    "content": "donne moi la méthodologie",
+    "createdAt": "2026-01-21T10:15:21.522Z"
+  },
+  {
+    "id": "4c36cc94-0215-4b20-8ba5-0fa1af763a82",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "assistant",
+    "content": "La méthodologie de Polytech est décrite dans les pages 1 à 5 du document. Voici une synthèse des éléments clés :\n\n1. **Architecture organique** : Polytech a été conçu comme un organisme vivant, capable de dialoguer avec le climat.\n2. **Sensibilité au vent et à la chaleur** : Les murs, les colonnes et les terrasses sont orientés pour sentir le vent et mesurer la chaleur.\n3. **Analyse des nuages** : Des dômes translucides recueillent la lumière pour analyser la couverture nuageuse.\n4. **Méditation climatique** : Les terrasses supérieures servent d'espaces de méditation climatique, où les visiteurs peuvent écouter le tonnerre lointain ou le silence lourd précédant la pluie.\n5. **Lieu de transmission** : Polytech est un lieu où les étudiants, les chercheurs et les voyageurs peuvent apprendre à lire les nuages, à comprendre les saisons et à respecter les cycles naturels.\n6. **Symbolisme du bâtiment** : Polytech symbolise une alliance entre technologie, architecture et nature, typique d'une Asie du Sud tournée vers l'avenir sans renier ses racines.\n\nEn résumé, la méthodologie de Polytech est basée sur la compréhension que le climat est un langage à comprendre et non un ennemi à combattre. Le bâtiment est conçu pour dialoguer avec le climat et pour transmettre cette compréhension aux visiteurs.",
+    "createdAt": "2026-01-21T10:15:35.208Z"
+  },
+  {
+    "id": "b015533e-4c45-433a-b3b8-29a09e9a4026",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "user",
+    "content": "explique moi avec un exemple et tout l'investissement boursier",
+    "createdAt": "2026-01-21T10:15:53.082Z"
+  },
+  {
+    "id": "c6a4f5eb-d171-4b44-b271-16ccaea0352d",
+    "chatId": "3a4583ac-6861-48ab-bf48-f42a4e8ac5b6",
+    "userId": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "role": "assistant",
+    "content": "D'après les sources fournies, voici les informations sur Polytech :\n\n**Investissement boursier :**\nPas d'informations spécifiques sur l'investissement boursier. Les documents n'abordent pas ce sujet.\n\n**Exemple :**\nUn exemple de la compréhension du climat à travers Polytech est donné dans les pages 2 et 3 des documents. Un visiteur peut observer une salle circulaire avec des données climatiques projetées comme des fresques animées, où la pluie se traduit par des variations de couleurs chaudes ou froides sur les murs.\n\n**Description du bâtiment :**\nPolytech est un bâtiment élancé qui s'élève en gradins, permettant à l'air de circuler librement. Ses façades de pierre claire et de métal poli capturent la lumière du soleil, tandis que ses toits superposés évoquent les pagodes et les palais tropicaux de la région.\n\n**Architecture qui lit le ciel :**\nLa structure de Polytech est conçue pour sentir le vent, mesurer la chaleur et écouter la pluie. Les murs, les colonnes et les terrasses sont orientés pour capter les informations climatiques. Des dômes translucides recueillent la lumière pour analyser la couverture nuageuse, tandis que des ailes mobiles s'orientent selon la direction du vent.\n\n**Lieu de transmission :**\nPolytech est un lieu où les étudiants, les chercheurs et les voyageurs peuvent apprendre à lire les nuages, à comprendre les saisons et à respecter les cycles naturels. Les terrasses supérieures servent d'espaces de méditation climatique.\n\n**Symbole d'avenir :**\nPolytech symbolise une alliance entre technologie, architecture et nature, typique d'une Asie du Sud tournée vers l'avenir sans renier ses racines. Il est un **messager du ciel**, un pont entre l'homme et la météo, et un rappel constant que comprendre le climat, c'est déjà apprendre à mieux habiter le monde.\n\n**Investissement total :**\nPas d'informations spécifiques sur l'investissement total. Les documents n'abordent pas ce sujet.",
+    "createdAt": "2026-01-21T10:16:12.798Z"
   }
 ]

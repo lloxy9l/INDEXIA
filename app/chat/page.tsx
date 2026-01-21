@@ -304,7 +304,7 @@ export default function ChatPage() {
           model: modelId,
           messages,
           ragEnabled,
-          ragPipeline,
+          ragPipeline: ragEnabled ? ragPipeline : undefined,
         }),
       })
 
