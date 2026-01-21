@@ -76,11 +76,11 @@ const defaultModelShare: ModelShareItem[] = LLM_CATALOG.map((value) => ({
   value: 0,
 }))
 
-const pipelineUsage = [
-  { pipeline: "RAG standard", requests: 420 },
-  { pipeline: "RAG + re-ranking", requests: 310 },
-  { pipeline: "Multi-query", requests: 240 },
-  { pipeline: "Agent RAG", requests: 130 },
+const defaultPipelineUsage = [
+  { pipeline: "Standard", requests: 0 },
+  { pipeline: "Re-ranking", requests: 0 },
+  { pipeline: "Multi-query", requests: 0 },
+  { pipeline: "Agent", requests: 0 },
 ]
 
 const pipelineConfig = {
@@ -93,13 +93,7 @@ const topUsersConfig = {
   requests: { label: "Requêtes", color: "#0ea5e9" }, // cyan
 } satisfies ChartConfig
 
-const topDocs = [
-  { title: "Guide RAG interne", hits: 210 },
-  { title: "Procédure Support N2", hits: 184 },
-  { title: "Playbook Sécurité", hits: 162 },
-  { title: "FAQ Produit", hits: 140 },
-  { title: "Roadmap 2024", hits: 118 },
-]
+const defaultTopDocs: { title: string; hits: number }[] = []
 
 const topDocsConfig = {
   hits: { label: "Consultations", color: "#f97316" }, // orange vif
@@ -670,6 +664,8 @@ export default function Page() {
   const benchmarkGradBase = React.useId().replace(/:/g, "")
   const [modelShare, setModelShare] = React.useState<ModelShareItem[]>(defaultModelShare)
   const [topUsers, setTopUsers] = React.useState(defaultTopUsers)
+  const [pipelineUsage, setPipelineUsage] = React.useState(defaultPipelineUsage)
+  const [topDocs, setTopDocs] = React.useState(defaultTopDocs)
   const modelShareConfig = React.useMemo(() => {
     const palette = ["#2563eb", "#ef4444", "#22c55e", "#f59e0b", "#0ea5e9", "#a855f7"]
     const config: ChartConfig = {}
@@ -815,6 +811,50 @@ export default function Page() {
       }
     }
     loadTopUsers()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadPipelineUsage = async () => {
+      try {
+        const res = await fetch("/api/metrics/requests-by-pipeline", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.data)) {
+          setPipelineUsage(payload.data)
+        }
+      } catch {
+        if (active) setPipelineUsage(defaultPipelineUsage)
+      }
+    }
+    loadPipelineUsage()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadTopDocs = async () => {
+      try {
+        const res = await fetch("/api/metrics/top-docs", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.data)) {
+          setTopDocs(payload.data)
+        }
+      } catch {
+        if (active) setTopDocs(defaultTopDocs)
+      }
+    }
+    loadTopDocs()
     return () => {
       active = false
     }
