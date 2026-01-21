@@ -396,35 +396,19 @@ const activityStats = {
   errors: 6,
 }
 
-const benchmarkModelSpeed = [
-  { model: "Llama 3", ms: 450 },
-  { model: "Mistral", ms: 310 },
-  { model: "Qwen", ms: 370 },
-  { model: "GPT-4o mini", ms: 290 },
-]
+const defaultBenchmarkModelSpeed: { model: string; ms: number }[] = []
 
-const benchmarkHallucination = [
-  { model: "GPT-4o mini", percent: 3 },
-  { model: "Mistral", percent: 7 },
-  { model: "Llama 3", percent: 10 },
-  { model: "Qwen", percent: 12 },
-]
+const defaultBenchmarkHallucination: { model: string; percent: number }[] = []
 
-const benchmarkPipelineRelevance = [
-  { day: "J-6", standard: 0.72, rerank: 0.81, multi: 0.78, agent: 0.75 },
-  { day: "J-5", standard: 0.73, rerank: 0.82, multi: 0.79, agent: 0.76 },
-  { day: "J-4", standard: 0.74, rerank: 0.83, multi: 0.8, agent: 0.77 },
-  { day: "J-3", standard: 0.71, rerank: 0.8, multi: 0.78, agent: 0.75 },
-  { day: "J-2", standard: 0.73, rerank: 0.82, multi: 0.79, agent: 0.76 },
-  { day: "J-1", standard: 0.74, rerank: 0.83, multi: 0.8, agent: 0.77 },
-]
+const defaultBenchmarkPipelineRelevance: {
+  day: string
+  standard: number | null
+  rerank: number | null
+  multi: number | null
+  agent: number | null
+}[] = []
 
-const benchmarkPipelineTime = [
-  { pipeline: "RAG standard", ms: 320 },
-  { pipeline: "RAG + re-ranking", ms: 410 },
-  { pipeline: "RAG multi-query", ms: 520 },
-  { pipeline: "RAG agent", ms: 580 },
-]
+const defaultBenchmarkPipelineTime: { pipeline: string; ms: number }[] = []
 
 const benchmarkPipelineQuality = [
   { pipeline: "RAG standard", excellent: 20, bon: 40, moyen: 25, mauvais: 10, nul: 5 },
@@ -649,6 +633,17 @@ export default function Page() {
   const [topUsers, setTopUsers] = React.useState(defaultTopUsers)
   const [pipelineUsage, setPipelineUsage] = React.useState(defaultPipelineUsage)
   const [topDocs, setTopDocs] = React.useState(defaultTopDocs)
+  const [benchmarkModelSpeed, setBenchmarkModelSpeed] = React.useState(
+    defaultBenchmarkModelSpeed
+  )
+  const [benchmarkHallucination, setBenchmarkHallucination] = React.useState(
+    defaultBenchmarkHallucination
+  )
+  const [benchmarkPipelineRelevance, setBenchmarkPipelineRelevance] =
+    React.useState(defaultBenchmarkPipelineRelevance)
+  const [benchmarkPipelineTime, setBenchmarkPipelineTime] = React.useState(
+    defaultBenchmarkPipelineTime
+  )
   const modelShareConfig = React.useMemo(() => {
     const palette = ["#2563eb", "#ef4444", "#22c55e", "#f59e0b", "#0ea5e9", "#a855f7"]
     const config: ChartConfig = {}
@@ -807,6 +802,62 @@ export default function Page() {
       }
     }
     loadTopUsers()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadBenchmarkModels = async () => {
+      try {
+        const res = await fetch("/api/metrics/benchmarks/models", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.speed)) {
+          setBenchmarkModelSpeed(payload.speed)
+        }
+        if (Array.isArray(payload?.hallucination)) {
+          setBenchmarkHallucination(payload.hallucination)
+        }
+      } catch {
+        if (active) {
+          setBenchmarkModelSpeed(defaultBenchmarkModelSpeed)
+          setBenchmarkHallucination(defaultBenchmarkHallucination)
+        }
+      }
+    }
+    loadBenchmarkModels()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let active = true
+    const loadBenchmarkPipelines = async () => {
+      try {
+        const res = await fetch("/api/metrics/benchmarks/pipelines", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!active || !res.ok) return
+        if (Array.isArray(payload?.relevance)) {
+          setBenchmarkPipelineRelevance(payload.relevance)
+        }
+        if (Array.isArray(payload?.time)) {
+          setBenchmarkPipelineTime(payload.time)
+        }
+      } catch {
+        if (active) {
+          setBenchmarkPipelineRelevance(defaultBenchmarkPipelineRelevance)
+          setBenchmarkPipelineTime(defaultBenchmarkPipelineTime)
+        }
+      }
+    }
+    loadBenchmarkPipelines()
     return () => {
       active = false
     }
@@ -3327,39 +3378,27 @@ export default function Page() {
                         <CardDescription>Volume et impact métier</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <ChartContainer
-                          config={topDocsConfig}
-                          className="aspect-video rounded-lg   bg-white/70 dark:bg-card"
-                        >
-                          <BarChart
-                            data={topDocs}
-                            layout="vertical"
-                            margin={{ top: 8, right: 16, left: 16, bottom: 8 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                            <XAxis type="number" hide />
-                            <YAxis
-                              dataKey="title"
-                              type="category"
-                              width={130}
-                              tickLine={false}
-                              axisLine={false}
-                            />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <defs>
-                              <linearGradient id={topDocsGradientId} x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="var(--color-hits)" stopOpacity={0.85} />
-                                <stop offset="100%" stopColor="var(--color-hits)" stopOpacity={0.55} />
-                              </linearGradient>
-                            </defs>
-                            <Bar
-                              dataKey="hits"
-                              fill={`url(#${topDocsGradientId})`}
-                              radius={6}
-                              barSize={18}
-                            />
-                          </BarChart>
-                        </ChartContainer>
+                        <div className="space-y-3 text-sm">
+                          {topDocs.length === 0 ? (
+                            <div className="text-muted-foreground">
+                              Aucun document remonté sur les 7 derniers jours.
+                            </div>
+                          ) : (
+                            topDocs.map((doc) => (
+                              <div
+                                key={doc.title}
+                                className="flex items-center justify-between gap-4"
+                              >
+                                <span className="truncate font-medium">
+                                  {doc.title}
+                                </span>
+                                <span className="tabular-nums text-muted-foreground">
+                                  {doc.hits}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </div>

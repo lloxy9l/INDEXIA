@@ -142,5 +142,85 @@
     "role": "assistant",
     "content": "Voici la liste complète des présidents américains, du premier président de l'Union à nos jours :\n\n1. George Washington (1789-1797)\n2. John Adams (1797-1801)\n3. Thomas Jefferson (1801-1809)\n4. James Madison (1809-1817)\n5. James Monroe (1817-1825)\n6. John Quincy Adams (1825-1829)\n7. Andrew Jackson (1829-1837)\n8. Martin Van Buren (1837-1841)\n9. William Henry Harrison (1841-1841)\n10. John Tyler (1841-1845)\n11. James K. Polk (1845-1849)\n12. Zachary Taylor (1849-1850)\n13. Millard Fillmore (1850-1853)\n14. Franklin Pierce (1853-1857)\n15. James Buchanan (1857-1861)\n16. Abraham Lincoln (1861-1865)\n17. Andrew Johnson (1865-1869)\n18. Ulysses S. Grant (1869-1877)\n19. Rutherford B. Hayes (1877-1881)\n20. James A. Garfield (1881-1881)\n21. Chester A. Arthur (1881-1885)\n22. Grover Cleveland (1885-1889)\n23. Benjamin Harrison (1889-1893)\n24. Grover Cleveland (1893-1897)\n25. William McKinley (1897-1901)\n26. Theodore Roosevelt (1901-1909)\n27. William Howard Taft (1909-1913)\n28. Woodrow Wilson (1913-1921)\n29. Warren G. Harding (1921-1923)\n30. Calvin Coolidge (1923-1929)\n31. Herbert Hoover (1929-1933)\n32. Franklin D. Roosevelt (1933-1945)\n33. Harry S. Truman (1945-1953)\n34. Dwight D. Eisenhower (1953-1961)\n35. John F. Kennedy (1961-1963)\n36. Lyndon B. Johnson (1963-1969)\n37. Richard Nixon (1969-1974)\n38. Gerald R. Ford (1974-1977)\n39. Jimmy Carter (1977-1981)\n40. Ronald Reagan (1981-1989)\n41. George H.W. Bush (1989-1993)\n42. Bill Clinton (1993-2001)\n43. George W. Bush (2001-2009)\n44. Barack Obama (2009-2017)\n45. Donald J. Trump (2017-2021)\n46. Joe Biden (2021-present)\n\nNote : John F. Kennedy est mort en office et a été remplacé par Lyndon B. Johnson, qui a terminé sa mission.\n\nJ'espère que cela vous aidera !",
     "createdAt": "2026-01-21T09:04:30.509Z"
+  },
+  {
+    "id": "7d473a04-ebb2-4f42-8c2f-195b8a40aa3d",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "bonjour",
+    "createdAt": "2026-01-21T09:12:12.539Z"
+  },
+  {
+    "id": "914b3b73-f258-49e6-b06d-411ef3bcd260",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Impossible de joindre le modèle llama3.2. Vérifiez qu'il est bien lancé localement.",
+    "createdAt": "2026-01-21T09:12:12.569Z"
+  },
+  {
+    "id": "ec740b18-a2a2-4e0f-ba99-028836e27deb",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "hello",
+    "createdAt": "2026-01-21T09:12:24.869Z"
+  },
+  {
+    "id": "cc066c10-63a8-42c7-a3cc-582d28b331d0",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat?",
+    "createdAt": "2026-01-21T09:12:34.091Z"
+  },
+  {
+    "id": "aeb1e60a-f43a-4fe5-b587-34d28a37857e",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "donne moi les infos sur les docs financier que t'as stp",
+    "createdAt": "2026-01-21T09:14:37.458Z"
+  },
+  {
+    "id": "5bcaf4de-3970-4935-bda1-4b0a3c33d39b",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Je ne peux pas repondre avec les documents disponibles.",
+    "createdAt": "2026-01-21T09:14:41.469Z"
+  },
+  {
+    "id": "ee1b9cc3-c6a7-42ed-bb4d-eba1807dc5d0",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "donne les",
+    "createdAt": "2026-01-21T09:14:53.893Z"
+  },
+  {
+    "id": "8df49b13-525c-4327-a3e5-2ecccffa903e",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Je ne peux pas repondre avec les documents disponibles.",
+    "createdAt": "2026-01-21T09:14:57.453Z"
+  },
+  {
+    "id": "9ab01e17-24ed-4a38-9a85-30d784d76793",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "donne moi les infos sur la Methodo_documentaire",
+    "createdAt": "2026-01-21T09:15:54.033Z"
+  },
+  {
+    "id": "70feb11f-b99b-4eea-9384-6632b467972c",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Je peux vous fournir les informations sur la méthodologie documentaire.\n\nSelon le document [2] Methodo_documentaire.pdf, la méthodologie de la recherche documentaire est l'ensemble des étapes permettant de chercher, identifier et trouver des documents relatifs à un sujet par l'élaboration d'une stratégie de recherche.\n\nLes principes clés de cette méthodologie sont :\n\n1. Préparer sa recherche\n2. Sélectionner les sources d'information\n3. Chercher et localiser les documents\n4. Évaluer la qualité et la pertinence des sources\n5. Mettre en place une veille documentaire pour suivre les dernières publications sur le sujet\n\nCette méthodologie repose également sur plusieurs principes clés, tels que :\n\n* La définition du sujet de recherche\n* La sélection des sources d'information pertinentes\n* L'utilisation de stratégies de recherche documentaires adaptées au sujet\n* L'évaluation de la qualité et de la pertinence des sources\n* La mise en place d'une veille documentaire pour suivre les dernières publications sur le sujet\n\nIl est important de noter que cette méthodologie peut varier en fonction du sujet de recherche, des sources d'information disponibles et des objectifs de la recherche.",
+    "createdAt": "2026-01-21T09:16:05.615Z"
   }
 ]
