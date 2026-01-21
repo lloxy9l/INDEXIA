@@ -55,6 +55,7 @@ export default async function SignupPage() {
           alt="Logo"
           width={180}
           height={180}
+          className="dark:invert"
           priority
           unoptimized
         />

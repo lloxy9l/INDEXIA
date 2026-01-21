@@ -346,5 +346,47 @@
     "durationMs": 3166,
     "createdAt": "2026-01-21T09:15:57.218Z",
     "pipeline": "ragStandard"
+  },
+  {
+    "id": "d5c0034b-1ca2-40d3-b224-2a28763571be",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4206,
+    "createdAt": "2026-01-21T09:47:32.859Z"
+  },
+  {
+    "id": "492bf483-2fe6-4952-9131-d5c1d174543a",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 961,
+    "createdAt": "2026-01-21T09:47:54.878Z"
+  },
+  {
+    "id": "ab348ceb-6c90-4521-995f-3e7bd7ceb43f",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 1144,
+    "createdAt": "2026-01-21T09:48:36.524Z"
+  },
+  {
+    "id": "a192f031-8210-4c81-b50b-ad46f403fbdc",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 1034,
+    "createdAt": "2026-01-21T09:48:45.792Z"
+  },
+  {
+    "id": "e371acfa-c273-4b3b-bf70-86296336185c",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 6924,
+    "createdAt": "2026-01-21T09:49:55.930Z"
+  },
+  {
+    "id": "1c345f11-d550-47aa-b53e-555e5eb90451",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 7265,
+    "createdAt": "2026-01-21T09:50:15.847Z"
   }
 ]

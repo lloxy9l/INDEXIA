@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import {
   IconChartBar,
   IconDashboard,
@@ -80,6 +81,8 @@ export function AppSidebar({
   onNavSelect?: (title: string) => void
   activeItem?: string
 }) {
+  const router = useRouter()
+
   React.useEffect(() => {
     onNavSelect?.(data.navMain[0]?.title ?? "")
   }, [onNavSelect])
@@ -136,6 +139,20 @@ export function AppSidebar({
     return `${first}${last}`.toUpperCase()
   }, [session])
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" })
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion", error)
+    } finally {
+      router.push("/login")
+    }
+  }
+
+  const handleOpenSettings = () => {
+    router.push("/chat?settings=1")
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="mb-4 pt-4">
@@ -146,6 +163,7 @@ export function AppSidebar({
                   alt="Logo"
                   width={140}
                   height={140}
+                  className="dark:invert"
                   priority
                   unoptimized
                 />
@@ -164,6 +182,7 @@ export function AppSidebar({
           <button
             className="text-muted-foreground hover:bg-muted flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
             type="button"
+            onClick={handleOpenSettings}
           >
             <IconSettings className="h-4 w-4" />
             Paramètres
@@ -171,6 +190,7 @@ export function AppSidebar({
           <button
             className="text-red-500 hover:bg-red-50 flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition cursor-pointer"
             type="button"
+            onClick={handleLogout}
           >
             <IconLogout className="h-4 w-4" />
             Déconnexion

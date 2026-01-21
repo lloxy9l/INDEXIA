@@ -3,7 +3,7 @@
 import type React from "react"
 import { Fragment, useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { SiteHeader } from "@/components/site-header"
 import type { ChatRecord } from "@/lib/chats"
@@ -139,6 +139,7 @@ const renderMarkdown = (content: string) => {
 
 export default function ChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const logoSrc = "/logo.png"
   const normalizeModelName = (value: string) => value.split(":")[0].toLowerCase()
   const resolveModelIcon = (value: string) => {
@@ -199,6 +200,7 @@ export default function ChatPage() {
   const [projectRenameInput, setProjectRenameInput] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [showSettings, setShowSettings] = useState(false)
+  const settingsQueryHandledRef = useRef(false)
   const [session, setSession] = useState<{
     email: string
     admin: boolean
@@ -834,8 +836,17 @@ export default function ChatPage() {
     el.style.overflowY = el.scrollHeight > nextHeight ? "auto" : "hidden"
   }
 
-  const handleSendMessage = async () => {
-    const trimmed = message.trim()
+  const sendMessageContent = async (
+    content: string,
+    {
+      clearInput,
+      extraMessages = [],
+    }: {
+      clearInput?: boolean
+      extraMessages?: { role: "system" | "user" | "assistant"; content: string }[]
+    } = {}
+  ) => {
+    const trimmed = content.trim()
     if (!trimmed || isSending) return
     if (!selectedModel) {
       setChatError("Aucun modèle installé. Téléchargez-en un via Ollama.")
@@ -878,17 +889,157 @@ export default function ChatPage() {
       const historyMessages = mapToOllamaMessages(chatHistory)
       const payloadMessages = [
         ...historyMessages,
+        ...extraMessages,
         { role: "user" as const, content: trimmed },
       ]
 
       setChatHistory((prev) => [...prev, userEntry, assistantEntry])
-      setMessage("")
+      if (clearInput) setMessage("")
       clearTypingTimeouts()
       await persistMessage(chatId, "user", trimmed)
       await requestAssistantReply(payloadMessages, assistantId, chatId)
     } finally {
       setIsSending(false)
     }
+  }
+
+  const handleSendMessage = async () => {
+    await sendMessageContent(message, { clearInput: true })
+  }
+
+  const fetchMetrics = async <T,>(path: string): Promise<T | null> => {
+    try {
+      const res = await fetch(path, { cache: "no-store" })
+      if (!res.ok) return null
+      return (await res.json()) as T
+    } catch {
+      return null
+    }
+  }
+
+  const buildQuickPrompt = async (action: string) => {
+    const isAdmin = Boolean(session?.admin)
+    const userLabel =
+      [session?.firstName, session?.lastName].filter(Boolean).join(" ").trim() ||
+      session?.email ||
+      "Utilisateur"
+    const extraMessages: {
+      role: "system" | "user" | "assistant"
+      content: string
+    }[] = []
+
+    if (action === "rights") {
+      extraMessages.push({
+        role: "system",
+        content: [
+          "Contexte utilisateur:",
+          `Nom: ${userLabel}`,
+          `Email: ${session?.email ?? "inconnu"}`,
+          `Rôle: ${isAdmin ? "Administrateur" : "Utilisateur"}`,
+        ].join("\n"),
+      })
+      return {
+        userPrompt: "Donne-moi mes droits d'accès.",
+        extraMessages,
+      }
+    }
+
+    if (!isAdmin && (action === "pipelines" || action === "benchmark")) {
+      extraMessages.push({
+        role: "system",
+        content:
+          "L'utilisateur n'est pas administrateur. Réponds: 'Je ne peux pas afficher ces statistiques car vous n'êtes pas administrateur.'",
+      })
+      return {
+        userPrompt: "Donne-moi une comparaison des pipelines RAG.",
+        extraMessages,
+      }
+    }
+
+    if (action === "analyse") {
+      const [requests, quality, models] = await Promise.all([
+        fetchMetrics("/api/metrics/requests"),
+        fetchMetrics("/api/metrics/quality"),
+        fetchMetrics("/api/metrics/requests-by-model"),
+      ])
+      extraMessages.push({
+        role: "system",
+        content: `Données dashboard (JSON): ${JSON.stringify({
+          requests,
+          quality,
+          models,
+        })}`,
+      })
+      return {
+        userPrompt: "Analyse les données du dashboard et résume en 5 points.",
+        extraMessages,
+      }
+    }
+
+    if (action === "summary") {
+      const lastUser = [...chatHistory]
+        .reverse()
+        .find((entry) => entry.role === "user" && entry.content?.trim())
+      if (!lastUser) {
+        return {
+          userPrompt: "Je n'ai pas de texte à résumer. Demande-moi un texte.",
+          extraMessages,
+        }
+      }
+      extraMessages.push({
+        role: "system",
+        content: `Texte a resumer: ${lastUser.content.trim()}`,
+      })
+      return {
+        userPrompt: "Résume ce texte en 5 points clairs.",
+        extraMessages,
+      }
+    }
+
+    if (action === "pipelines") {
+      const [usage, benchmark] = await Promise.all([
+        fetchMetrics("/api/metrics/requests-by-pipeline"),
+        fetchMetrics("/api/metrics/benchmarks/pipelines"),
+      ])
+      extraMessages.push({
+        role: "system",
+        content: `Stats dashboard (JSON): ${JSON.stringify({
+          usage,
+          benchmark,
+        })}`,
+      })
+      return {
+        userPrompt:
+          "Donne-moi une comparaison des pipelines RAG (standard, re-ranking, multi-query, agent). Donne un tableau simple puis une conclusion.",
+        extraMessages,
+      }
+    }
+
+    if (action === "benchmark") {
+      const [models, pipelines] = await Promise.all([
+        fetchMetrics("/api/metrics/benchmarks/models"),
+        fetchMetrics("/api/metrics/benchmarks/pipelines"),
+      ])
+      extraMessages.push({
+        role: "system",
+        content: `Stats dashboard (JSON): ${JSON.stringify({
+          models,
+          pipelines,
+        })}`,
+      })
+      return {
+        userPrompt:
+          "Fais un résumé benchmark clair (temps de réponse, hallucinations, pertinence pipelines).",
+        extraMessages,
+      }
+    }
+
+    return { userPrompt: "Aucune action sélectionnée.", extraMessages }
+  }
+
+  const handleQuickAction = async (action: string) => {
+    const { userPrompt, extraMessages } = await buildQuickPrompt(action)
+    await sendMessageContent(userPrompt, { clearInput: false, extraMessages })
   }
 
   useEffect(() => {
@@ -1021,6 +1172,14 @@ export default function ChatPage() {
       router.push("/login")
     }
   }
+
+  useEffect(() => {
+    if (settingsQueryHandledRef.current) return
+    if (searchParams?.get("settings") === "1") {
+      setShowSettings(true)
+      settingsQueryHandledRef.current = true
+    }
+  }, [searchParams])
 
   const openEmailEdit = () => {
     setEmailUpdateError("")
@@ -1504,6 +1663,7 @@ export default function ChatPage() {
                 alt="Logo"
                 width={140}
                 height={140}
+                className="dark:invert"
                 priority
                 unoptimized
               />
@@ -1624,7 +1784,7 @@ export default function ChatPage() {
                       </button>
                       {actionMenuChatId === chat.id && (
                               <div
-                                className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg"
+                                className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg dark:bg-neutral-950/95"
                                 data-chat-actions
                               >
                                 <button
@@ -1881,7 +2041,7 @@ export default function ChatPage() {
                                   </button>
                                 {actionMenuChatId === chat.id && (
                                   <div
-                                    className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg"
+                                    className="absolute right-0 top-[calc(100%+4px)] z-50 w-44 rounded-xl border border-border bg-white shadow-lg dark:bg-neutral-950/95"
                                     data-chat-actions
                                   >
                                       <button
@@ -1974,8 +2134,8 @@ export default function ChatPage() {
       <SidebarInset>
         <SiteHeader title={headerTitle} showSidebarTrigger={false} />
         <div className="bg-background text-foreground relative flex min-h-[calc(100vh-var(--header-height))] flex-1 overflow-hidden px-4 pb-8 pt-4 lg:px-8">
-          <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44">
-            <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none">
+          <div className="relative flex flex-1 flex-col items-center gap-6 rounded-3xl bg-white/90 p-6 pb-44 dark:bg-neutral-900/80">
+            <Card className="w-[1100px] max-w-full rounded-3xl bg-white/70 shadow-none border-none dark:bg-neutral-900/70">
             <CardContent className="flex h-[50vh] flex-col gap-4 px-6 py-4">
               <div className="flex-1 overflow-y-auto" ref={messagesContainerRef}>
                 {chatHistory.length === 0 ? (
@@ -2082,7 +2242,7 @@ export default function ChatPage() {
                 {chatError}
               </div>
             ) : null}
-            <Card className="absolute bottom-0 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur">
+            <Card className="absolute bottom-0 left-1/2 z-30 w-[960px] max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-3xl border border-border/70 bg-white/95 shadow-xl backdrop-blur dark:bg-neutral-950/90">
               <CardContent className="flex flex-col gap-3 px-6 py-3">
                 <textarea
                   rows={1}
@@ -2228,6 +2388,7 @@ export default function ChatPage() {
                 <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground justify-start">
                   {[
                     {
+                      action: "analyse",
                       icon: <IconDatabase className="h-4 w-4 text-cyan-700" />,
                       label: "Analyse data",
                       bg: "bg-cyan-50",
@@ -2235,6 +2396,7 @@ export default function ChatPage() {
                       border: "border-cyan-200",
                     },
                     {
+                      action: "summary",
                       icon: <IconSparkle className="h-4 w-4 text-amber-700" />,
                       label: "Résumer texte",
                       bg: "bg-amber-50",
@@ -2242,6 +2404,7 @@ export default function ChatPage() {
                       border: "border-amber-200",
                     },
                     {
+                      action: "rights",
                       icon: <IconShield className="h-4 w-4 text-emerald-700" />,
                       label: "Vérifier droits",
                       bg: "bg-emerald-50",
@@ -2249,6 +2412,7 @@ export default function ChatPage() {
                       border: "border-emerald-200",
                     },
                     {
+                      action: "pipelines",
                       icon: <IconFlow className="h-4 w-4 text-indigo-700" />,
                       label: "Comparer pipelines",
                       bg: "bg-indigo-50",
@@ -2256,6 +2420,7 @@ export default function ChatPage() {
                       border: "border-indigo-200",
                     },
                     {
+                      action: "benchmark",
                       icon: <IconChart className="h-4 w-4 text-rose-700" />,
                       label: "Benchmark",
                       bg: "bg-rose-50",
@@ -2267,6 +2432,7 @@ export default function ChatPage() {
                       key={item.label}
                       type="button"
                       className={`flex gap-2 rounded-full border px-3 py-2 transition cursor-pointer ${item.bg} ${item.text} ${item.border} hover:brightness-95`}
+                      onClick={() => handleQuickAction(item.action)}
                     >
                       {item.icon}
                       <span>{item.label}</span>
@@ -2288,7 +2454,7 @@ export default function ChatPage() {
               }
             }}
           />
-          <Card className="relative z-40 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
+          <Card className="relative z-40 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl dark:bg-neutral-950/95">
             <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -2358,7 +2524,7 @@ export default function ChatPage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setProjectPickerChatId(null)}
           />
-          <Card className="relative z-50 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
+          <Card className="relative z-50 w-full max-w-md rounded-3xl border border-border/60 bg-white/95 shadow-2xl dark:bg-neutral-950/95">
             <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -2406,16 +2572,19 @@ export default function ChatPage() {
       {showSettings && (
         <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-8">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-md"
             onClick={() => setShowSettings(false)}
           />
-          <Card className="relative z-10 w-full max-w-3xl rounded-3xl border border-border/60 bg-white/95 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border/70 px-6 py-4">
-              <div>
+          <Card className="relative z-10 w-full max-w-4xl overflow-hidden rounded-3xl border border-primary/10 bg-white/95 shadow-2xl dark:bg-neutral-950/95">
+            <div className="flex items-center justify-between border-b border-primary/10 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
+              <div className="space-y-1">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
                   Préférences
                 </p>
                 <h2 className="text-xl font-semibold">Paramètres du compte</h2>
+                <p className="text-sm text-muted-foreground">
+                  Gérez vos informations, la sécurité et les accès.
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -2425,7 +2594,7 @@ export default function ChatPage() {
                 Fermer
               </Button>
             </div>
-            <div className="grid gap-4 px-6 py-6 md:grid-cols-2">
+            <div className="grid max-h-[80vh] gap-5 overflow-y-auto px-6 py-6 md:grid-cols-2">
               <div className="flex flex-col gap-4">
                 <SettingsSection title="Profil">
                   <SettingsRow
@@ -2440,7 +2609,7 @@ export default function ChatPage() {
                     disabled={!session}
                   />
                   {nameEditMode && (
-                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                    <div className="rounded-xl border border-border/60 bg-white/80 px-3 py-3 shadow-sm dark:bg-neutral-950/60">
                       <div className="flex flex-col gap-2">
                         <label
                           htmlFor="first-name-update"
@@ -2512,7 +2681,7 @@ export default function ChatPage() {
                     disabled={!session}
                   />
                   {emailEditMode && (
-                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                    <div className="rounded-xl border border-border/60 bg-white/80 px-3 py-3 shadow-sm dark:bg-neutral-950/60">
                       <div className="flex flex-col gap-2">
                         <label
                           htmlFor="email-update"
@@ -2568,7 +2737,7 @@ export default function ChatPage() {
                     disabled={!session}
                   />
                   {passwordEditMode && (
-                    <div className="rounded-xl bg-background px-3 py-3 shadow-sm">
+                    <div className="rounded-xl border border-border/60 bg-white/80 px-3 py-3 shadow-sm dark:bg-neutral-950/60">
                       <div className="flex flex-col gap-2">
                         <label
                           htmlFor="password-update"
@@ -2650,7 +2819,7 @@ export default function ChatPage() {
                     disabled={!session}
                   />
                   {deleteConfirmOpen && (
-                    <div className="rounded-xl bg-red-50 px-3 py-3 shadow-sm border border-red-200">
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-3 shadow-sm dark:border-red-900/60 dark:bg-red-950/40">
                       <p className="text-sm font-semibold text-red-700">
                         Confirmer la suppression du compte ?
                       </p>
@@ -3193,8 +3362,10 @@ function SettingsSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 shadow-sm">
-      <div className="mb-3 text-sm font-semibold text-muted-foreground">{title}</div>
+    <div className="rounded-2xl border border-primary/10 bg-white/70 p-4 shadow-sm dark:bg-neutral-900/60">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </div>
       <div className="flex flex-col gap-3">{children}</div>
     </div>
   )
@@ -3202,7 +3373,7 @@ function SettingsSection({
 
 function SettingsRow({ label, value, action, danger, onAction, disabled }: SettingsRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2 shadow-sm">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-white/80 px-3 py-2 shadow-sm dark:bg-neutral-950/60">
       <div>
         <div className="text-sm font-medium">{label}</div>
         {value ? (

@@ -52,7 +52,13 @@ export default function LandingPage() {
         </div>
         <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="IndexIA logo" width={150} height={150} />
+            <Image
+              src="/logo.png"
+              alt="IndexIA logo"
+              width={150}
+              height={150}
+              className="dark:invert"
+            />
           </div>
           <nav className="hidden items-center gap-6 text-sm text-slate-700 md:flex">
             <span>Vision</span>

@@ -222,5 +222,101 @@
     "role": "assistant",
     "content": "Je peux vous fournir les informations sur la méthodologie documentaire.\n\nSelon le document [2] Methodo_documentaire.pdf, la méthodologie de la recherche documentaire est l'ensemble des étapes permettant de chercher, identifier et trouver des documents relatifs à un sujet par l'élaboration d'une stratégie de recherche.\n\nLes principes clés de cette méthodologie sont :\n\n1. Préparer sa recherche\n2. Sélectionner les sources d'information\n3. Chercher et localiser les documents\n4. Évaluer la qualité et la pertinence des sources\n5. Mettre en place une veille documentaire pour suivre les dernières publications sur le sujet\n\nCette méthodologie repose également sur plusieurs principes clés, tels que :\n\n* La définition du sujet de recherche\n* La sélection des sources d'information pertinentes\n* L'utilisation de stratégies de recherche documentaires adaptées au sujet\n* L'évaluation de la qualité et de la pertinence des sources\n* La mise en place d'une veille documentaire pour suivre les dernières publications sur le sujet\n\nIl est important de noter que cette méthodologie peut varier en fonction du sujet de recherche, des sources d'information disponibles et des objectifs de la recherche.",
     "createdAt": "2026-01-21T09:16:05.615Z"
+  },
+  {
+    "id": "fc98d23b-b679-44f2-aa02-f236a778c440",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Tu es l'assistant interne IndexIA.\nUtilisateur connecté: user 30958018.\nEmail: soldan.maxens@gmail.com.\nRôle: Administrateur.\nRéponds en listant clairement ses droits et accès.",
+    "createdAt": "2026-01-21T09:47:28.632Z"
+  },
+  {
+    "id": "4348e0de-a4ef-486c-b360-a2dfa721ff81",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Bonjour ! En tant que l'assistant interne IndexIA, je vais vous fournir les informations sur mes droits et accès.\n\n**Informations d'identification :**\n\n* Nom d'utilisateur : user 30958018\n* Adresse e-mail : soldan.maxens@gmail.com\n* Rôle : Administrateur\n\n**Droits et accès :**\n\nEn tant qu'Administrateur, j'ai les droits suivants :\n\n1. **Accès aux documents** :\n * Pouvoir de consultation et de lecture des documents stockés dans le système.\n2. **Gestion des utilisateurs** :\n * Pouvoir d'ajout, de modification et de suppression des comptes utilisateur.\n3. **Conception et mise à jour du contenu** :\n * Pouvoir de modification des contenus du site web et des documents.\n4. **Administration de l'accès** :\n * Pouvoir de contrôle des accès aux sections du site web et aux documents sensibles.\n5. **Statistiques et analyse** :\n * Pouvoir d'accès aux statistiques et aux analyses des activités du système.\n\n**Limitations :**\n\nEn tant qu'Administrateur, j'ai également des limitations en termes de pouvoir :\n\n1. **Pas de modification de paramètres système** :\n * Pas de pouvoir de modification des paramètres système tels que les configurations de sécurité ou les paramètres de sauvegarde.\n2. **Pas d'accès à l'administration finale** :\n * Pas de pouvoir d'administration finale qui impliquerait de prendre des décisions sur la stratégie globale du système.\n\nJe vous remercie de me confier votre confiance en tant qu'Administrateur ! Si vous avez besoin d'informations supplémentaires, n'hésitez pas à me poser vos questions.",
+    "createdAt": "2026-01-21T09:47:43.684Z"
+  },
+  {
+    "id": "47b15dd3-7494-4e86-9db7-99d59d14958a",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Compare les pipelines RAG (standard, re-ranking, multi-query, agent).\nUtilise les stats du dashboard ci-dessous (JSON).\nDonne un tableau simple puis une conclusion.\n{\"usage\":{\"data\":[{\"pipeline\":\"Standard\",\"requests\":25},{\"pipeline\":\"Re-ranking\",\"requests\":0},{\"pipeline\":\"Multi-query\",\"requests\":0},{\"pipeline\":\"Agent\",\"requests\":0}]},\"benchmark\":{\"relevance\":[{\"day\":\"J-6\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-5\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-4\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-3\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-2\",\"standard\":1,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-1\",\"standard\":0,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-0\",\"standard\":0.875,\"rerank\":null,\"multi\":null,\"agent\":null}],\"time\":[{\"pipeline\":\"Standard\",\"ms\":1671},{\"pipeline\":\"Re-ranking\",\"ms\":0},{\"pipeline\":\"Multi-query\",\"ms\":0},{\"pipeline\":\"Agent\",\"ms\":0}]}}",
+    "createdAt": "2026-01-21T09:47:53.900Z"
+  },
+  {
+    "id": "3842d157-3d54-447b-b407-bfb2542761ab",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "**Tableau de comparaison des pipelines RAG**\n\n| Pipeline | Demande | Temps moyen (ms) |\n| --- | --- | --- |\n| Standard | 25 | 1671 |\n| Re-ranking | 0 | 0 |\n| Multi-query | 0 | 0 |\n| Agent | 0 | 0 |\n\n**Conclusion :**\n\nLes statistiques présentées montrent que le pipeline \"Standard\" est le plus performant en termes de demande (25 demandes) et de temps moyen (1671 ms). Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" n'ont pas de demande ou n'ont pas de temps moyen attribué, ce qui suggère qu'ils ne sont pas utilisés ou qu'ils sont très rapides.\n\nLe pipeline \"Standard\" est le plus utilisé et offre un bon équilibre entre la demande et le temps. Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" semblent être des options alternatives qui ne sont pas nécessairement plus performantes, mais qui pourraient être utilisées dans des contextes spécifiques.\n\nIl est important de noter que les statistiques présentées ne fournissent qu'une vue d'ensemble et qu'il faudrait effectuer des analyses plus approfondies pour comprendre les motivations derrière les choix de pipeline.",
+    "createdAt": "2026-01-21T09:48:03.569Z"
+  },
+  {
+    "id": "3a6eff7f-6828-431f-a468-095fdc6ecc1e",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Résume le texte suivant en 5 points clairs:\nCompare les pipelines RAG (standard, re-ranking, multi-query, agent).\nUtilise les stats du dashboard ci-dessous (JSON).\nDonne un tableau simple puis une conclusion.\n{\"usage\":{\"data\":[{\"pipeline\":\"Standard\",\"requests\":25},{\"pipeline\":\"Re-ranking\",\"requests\":0},{\"pipeline\":\"Multi-query\",\"requests\":0},{\"pipeline\":\"Agent\",\"requests\":0}]},\"benchmark\":{\"relevance\":[{\"day\":\"J-6\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-5\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-4\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-3\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-2\",\"standard\":1,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-1\",\"standard\":0,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-0\",\"standard\":0.875,\"rerank\":null,\"multi\":null,\"agent\":null}],\"time\":[{\"pipeline\":\"Standard\",\"ms\":1671},{\"pipeline\":\"Re-ranking\",\"ms\":0},{\"pipeline\":\"Multi-query\",\"ms\":0},{\"pipeline\":\"Agent\",\"ms\":0}]}}",
+    "createdAt": "2026-01-21T09:48:35.371Z"
+  },
+  {
+    "id": "337f23bb-9404-4acf-aacd-ad1eea296aee",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Voici les 5 points clairs :\n\n1. **Analyse des pipelines RAG** : Les statistiques sont comparées pour les pipelines RAG (standard, re-ranking, multi-query, agent).\n2. **Données de l'analyse** : Les données proviennent d'un dashboard JSON qui fournit les statistiques sur l'utilisation et le temps moyen de chaque pipeline.\n3. **Résultats** : Le pipeline \"Standard\" est le plus utilisé avec 25 demandes, tandis que les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" n'ont pas de demande.\n4. **Temps moyen** : Le pipeline \"Standard\" a un temps moyen de 1671 ms, tandis que les autres pipelines ont un temps moyen de 0 ms (ce qui suggère qu'ils sont très rapides).\n5. **Conclusion** : Le pipeline \"Standard\" est le plus performant en termes d'utilisation et de temps moyen, mais il conviendrait peut-être d'utiliser des pipelines spécifiques pour certaines applications ou utilisateurs.",
+    "createdAt": "2026-01-21T09:48:43.646Z"
+  },
+  {
+    "id": "e5c7f5f6-dd91-4058-a3b9-1d5fc3f55516",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Fais un résumé benchmark clair.\nInclure: temps de réponse, hallucinations, pertinence pipelines.\nDonnées (JSON):\n{\"models\":{\"speed\":[{\"model\":\"Llama 3\",\"ms\":1622},{\"model\":\"Qwen\",\"ms\":0}],\"hallucination\":[{\"model\":\"Llama 3\",\"percent\":7.4},{\"model\":\"Qwen\",\"percent\":0}]},\"pipelines\":{\"relevance\":[{\"day\":\"J-6\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-5\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-4\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-3\",\"standard\":null,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-2\",\"standard\":1,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-1\",\"standard\":0,\"rerank\":null,\"multi\":null,\"agent\":null},{\"day\":\"J-0\",\"standard\":0.9,\"rerank\":null,\"multi\":null,\"agent\":null}],\"time\":[{\"pipeline\":\"Standard\",\"ms\":1622},{\"pipeline\":\"Re-ranking\",\"ms\":0},{\"pipeline\":\"Multi-query\",\"ms\":0},{\"pipeline\":\"Agent\",\"ms\":0}]}}",
+    "createdAt": "2026-01-21T09:48:44.741Z"
+  },
+  {
+    "id": "d4479661-1732-40ad-a524-1fe20ee970d5",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "Voici un résumé benchmark clair :\n\n**Benchmark**\n\n* **Temps de réponse :**\n + Le pipeline \"Standard\" a un temps de réponse moyen de 1622 ms.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") ont un temps de réponse moyen de 0 ms, ce qui suggère qu'ils sont très rapides.\n* **Hallucinations :**\n + Le modèle \"Llama 3\" présente des hallucinations à 7.4% (pour le model \"Qwen\", les hallucinations sont nulles).\n* **Pertinence pipelines :**\n + Le pipeline \"Standard\" est la référence pour la pertinence, avec une note de 0,9 pour le jour 0.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") ont des notes de pertinence inférieures à celle du pipeline \"Standard\".\n\nEn résumé, le pipeline \"Standard\" est le plus performant en termes de temps de réponse et de pertinence, mais il présente également des hallucinations pour le modèle \"Llama 3\". Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" sont très rapides, mais présentent des pertinences inférieures à celle du pipeline \"Standard\".",
+    "createdAt": "2026-01-21T09:48:54.929Z"
+  },
+  {
+    "id": "283b4971-3551-42bd-b3c5-fdf7c6a43db3",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Donne-moi une comparaison des pipelines RAG (standard, re-ranking, multi-query, agent). Donne un tableau simple puis une conclusion.",
+    "createdAt": "2026-01-21T09:49:48.967Z"
+  },
+  {
+    "id": "f31869af-e142-4589-af4f-c8c9973b0fbe",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "**Tableau de comparaison des pipelines RAG**\n\n| Pipeline | Demande | Temps moyen (ms) |\n| --- | --- | --- |\n| Standard | 25 | 1622 |\n| Re-ranking | 0 | 0 |\n| Multi-query | 0 | 0 |\n| Agent | 0 | 0 |\n\n**Conclusion :**\n\nLes pipelines RAG présentent des caractéristiques différentes :\n\n* Le pipeline \"Standard\" est le plus utilisé avec 25 demandes et un temps moyen de 1622 ms.\n* Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" n'ont pas de demande, ce qui suggère qu'ils ne sont pas très utilisés ou que les demandes sont automatiquement traitées.\n* Le pipeline \"Standard\" est le plus lourd en termes de temps moyen, tandis que les autres pipelines sont très rapides (0 ms).\n* Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" n'ont pas de hallucinations ou de pertinence, ce qui suggère qu'ils sont efficaces dans leur traitement.\n\nEn résumé, le pipeline \"Standard\" est le plus performant en termes d'utilisation, mais il présente également des temps moyens lourds. Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" sont très rapides et présentent des performances excellentes.",
+    "createdAt": "2026-01-21T09:50:05.398Z"
+  },
+  {
+    "id": "f9a80fd6-0150-4858-b660-ef9824da9690",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "user",
+    "content": "Fais un résumé benchmark clair (temps de réponse, hallucinations, pertinence pipelines).",
+    "createdAt": "2026-01-21T09:50:08.568Z"
+  },
+  {
+    "id": "563c0e63-581a-4150-b72c-2603ceb8e490",
+    "chatId": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
+    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "role": "assistant",
+    "content": "**Résumé benchmark clair**\n\n* **Temps de réponse :**\n + Le pipeline \"Standard\" a un temps moyen de 1622 ms.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") ont des temps moyens inférieurs à 0 ms, ce qui suggère qu'ils sont très rapides.\n* **Hallucinations :**\n + Le pipeline \"Standard\" présente des hallucinations pour le modèle \"Llama 3\" à 7.4%.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") n'ont pas de hallucinations ou les ont au niveau de zéro.\n* **Pertinence pipelines :**\n + Le pipeline \"Standard\" est la référence pour la pertinence, avec une note de 0,9 pour le jour 0.\n + Les autres pipelines (\"Re-ranking\", \"Multi-query\" et \"Agent\") n'ont pas de pertinence ou les ont inférieure à celle du pipeline \"Standard\".\n\nEn résumé, le pipeline \"Standard\" présente des hallucinations et des temps moyens lourds, mais est la référence pour la pertinence. Les pipelines \"Re-ranking\", \"Multi-query\" et \"Agent\" sont très rapides et présentent des performances excellentes en termes de pertinence.",
+    "createdAt": "2026-01-21T09:50:25.545Z"
   }
 ]
