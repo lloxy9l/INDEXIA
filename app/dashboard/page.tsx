@@ -136,6 +136,17 @@ type DocumentChunkRow = {
   quality: string
 }
 
+type RequestLogItem = {
+  id: string
+  createdAt: string
+  user: string
+  question: string
+  model: string | null
+  pipeline: string | null
+  durationMs: number | null
+  status: "success" | "error" | "warn"
+}
+
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -278,35 +289,7 @@ const indexSettings = {
   embeddingModel: "Llama 3",
 }
 
-const requestLogs = [
-  {
-    date: "26/11/25 13:12",
-    user: "Maxime",
-    question: "Procédure incident ?",
-    model: "Llama 3",
-    pipeline: "RAG + rank",
-    time: "458 ms",
-    status: "success",
-  },
-  {
-    date: "26/11/25 13:08",
-    user: "Baptiste",
-    question: "Charte IT v3 ?",
-    model: "GPT-4o Mini",
-    pipeline: "RAG",
-    time: "310 ms",
-    status: "error",
-  },
-  {
-    date: "26/11/25 12:59",
-    user: "Sofia",
-    question: "Budget 2025",
-    model: "Mistral",
-    pipeline: "RAG",
-    time: "520 ms",
-    status: "warn",
-  },
-]
+const defaultRequestLogs: RequestLogItem[] = []
 
 const systemLogs = [
   { time: "13:12", type: "INDEX", desc: "Rebuild complet", status: "ok" },
@@ -705,6 +688,11 @@ export default function Page() {
   const [documentChunksLoading, setDocumentChunksLoading] = React.useState(false)
   const [chunkCounts, setChunkCounts] = React.useState<Record<string, number>>({})
   const [expandedChunkId, setExpandedChunkId] = React.useState<string | null>(null)
+  const [requestLogsState, setRequestLogsState] = React.useState<RequestLogItem[]>(
+    defaultRequestLogs
+  )
+  const [requestLogsLoading, setRequestLogsLoading] = React.useState(true)
+  const [requestLogsError, setRequestLogsError] = React.useState("")
   const documentsFs = React.useMemo(
     () => documentsState.filter((doc) => doc.id.startsWith("DOC-FS-")),
     [documentsState]
@@ -732,6 +720,14 @@ export default function Page() {
     if (emailPrefix) return emailPrefix
     return "Upload"
   }, [session])
+  const formatLogDate = React.useCallback((value: string) => {
+    const date = new Date(value)
+    if (!Number.isFinite(date.getTime())) return value
+    return new Intl.DateTimeFormat("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date)
+  }, [])
 
   const toggleUploadService = React.useCallback((service: string) => {
     setUploadServices((prev) =>
@@ -819,6 +815,46 @@ export default function Page() {
       active = false
     }
   }, [])
+
+  React.useEffect(() => {
+    let isMounted = true
+    if (checkingSession || !session?.admin) {
+      if (isMounted) setRequestLogsLoading(false)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    const loadRequestLogs = async () => {
+      setRequestLogsLoading(true)
+      setRequestLogsError("")
+      try {
+        const res = await fetch("/api/metrics/request-logs", {
+          cache: "no-store",
+        })
+        const payload = await res.json().catch(() => null)
+        if (!res.ok) {
+          throw new Error(payload?.error || `Erreur ${res.status}`)
+        }
+        const incoming = Array.isArray(payload?.data) ? payload.data : []
+        if (!isMounted) return
+        setRequestLogsState(incoming as RequestLogItem[])
+      } catch (error) {
+        console.error("Erreur lors du chargement des requêtes", error)
+        if (!isMounted) return
+        setRequestLogsError("Impossible de charger l'historique des requêtes")
+        setRequestLogsState(defaultRequestLogs)
+      } finally {
+        if (isMounted) setRequestLogsLoading(false)
+      }
+    }
+
+    loadRequestLogs()
+
+    return () => {
+      isMounted = false
+    }
+  }, [checkingSession, session?.admin])
 
   React.useEffect(() => {
     let isMounted = true
@@ -2670,42 +2706,66 @@ export default function Page() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {requestLogs.map((log) => (
-                                <TableRow key={`${log.date}-${log.user}`}>
-                                  <TableCell>{log.date}</TableCell>
-                                  <TableCell>{log.user}</TableCell>
-                                  <TableCell className="max-w-xs truncate">
-                                    {log.question}
-                                  </TableCell>
-                                  <TableCell>{log.model}</TableCell>
-                                  <TableCell>{log.pipeline}</TableCell>
-                                  <TableCell>{log.time}</TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        log.status === "success" &&
-                                          "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800",
-                                        log.status === "error" &&
-                                          "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800",
-                                        log.status === "warn" &&
-                                          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800"
-                                      )}
-                                    >
-                                      {log.status === "success"
-                                        ? "Succès"
-                                        : log.status === "error"
-                                        ? "Erreur"
-                                        : "À vérifier"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button size="sm" variant="outline">
-                                      Voir détails
-                                    </Button>
+                              {requestLogsLoading ? (
+                                <TableRow>
+                                  <TableCell colSpan={8} className="text-center text-sm">
+                                    Chargement des requêtes...
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                              ) : requestLogsError ? (
+                                <TableRow>
+                                  <TableCell colSpan={8} className="text-center text-sm text-destructive">
+                                    {requestLogsError}
+                                  </TableCell>
+                                </TableRow>
+                              ) : requestLogsState.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                                    Aucune requête enregistrée.
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                requestLogsState.map((log) => (
+                                  <TableRow key={log.id}>
+                                    <TableCell>{formatLogDate(log.createdAt)}</TableCell>
+                                    <TableCell>{log.user}</TableCell>
+                                    <TableCell className="max-w-xs truncate">
+                                      {log.question}
+                                    </TableCell>
+                                    <TableCell>{log.model ?? "—"}</TableCell>
+                                    <TableCell>{log.pipeline ?? "RAG"}</TableCell>
+                                    <TableCell>
+                                      {log.durationMs != null
+                                        ? `${Math.round(log.durationMs)} ms`
+                                        : "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          log.status === "success" &&
+                                            "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800",
+                                          log.status === "error" &&
+                                            "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800",
+                                          log.status === "warn" &&
+                                            "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800"
+                                        )}
+                                      >
+                                        {log.status === "success"
+                                          ? "Succès"
+                                          : log.status === "error"
+                                          ? "Erreur"
+                                          : "À vérifier"}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button size="sm" variant="outline">
+                                        Voir détails
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
                             </TableBody>
                           </Table>
                         </CardContent>

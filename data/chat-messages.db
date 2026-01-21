@@ -110,5 +110,37 @@
     "role": "assistant",
     "content": "Je ne peux pas repondre avec les documents disponibles.",
     "createdAt": "2026-01-13T13:19:08.922Z"
+  },
+  {
+    "id": "3aea8d66-f9cf-49f3-a8dd-f3b7e4ea70f2",
+    "chatId": "41bd38d0-8b99-450e-852c-47805cd802aa",
+    "userId": "477c7d7c-bd4a-4815-890e-988b664652c8",
+    "role": "user",
+    "content": "Donne moi la liste des présidents américains",
+    "createdAt": "2026-01-21T09:03:57.436Z"
+  },
+  {
+    "id": "a0f5a7b2-32bc-4ebd-a6ad-ce1c677277d7",
+    "chatId": "41bd38d0-8b99-450e-852c-47805cd802aa",
+    "userId": "477c7d7c-bd4a-4815-890e-988b664652c8",
+    "role": "assistant",
+    "content": "Bien sûr ! Voici la liste des présidents américains, du premier président de l'Union à nos jours :\n\n1. George Washington (1789-1797)\n2. John Adams (1797-1801)\n3. Thomas Jefferson (1801-1809)\n4. James Madison (1809-1817)\n5. James Monroe (1817-1825)\n6. John Quincy Adams (1825-1829)\n7. Andrew Jackson (1829-1837)\n8. Martin Van Buren (1837-1841)\n9. William Henry Harrison (1841-1841)\n10. John Tyler (1841-1845)\n11. James K. Polk (1845-1849)\n12. Zachary Taylor (1849-1850)\n13. Millard Fillmore (1850-1853)\n14. Franklin Pierce (1853-1857)\n15. James Buchanan (1857-1861)\n16. Abraham Lincoln (1861-1865)\n17. Andrew Johnson (1865-1869)\n18. Ulysses S. Grant (1869",
+    "createdAt": "2026-01-21T09:04:03.664Z"
+  },
+  {
+    "id": "65c21b56-94ea-4987-909b-69148f8553df",
+    "chatId": "41bd38d0-8b99-450e-852c-47805cd802aa",
+    "userId": "477c7d7c-bd4a-4815-890e-988b664652c8",
+    "role": "user",
+    "content": "donne moi toute la liste",
+    "createdAt": "2026-01-21T09:04:21.153Z"
+  },
+  {
+    "id": "54ea460d-ad7a-4922-b746-3e3082fca0a6",
+    "chatId": "41bd38d0-8b99-450e-852c-47805cd802aa",
+    "userId": "477c7d7c-bd4a-4815-890e-988b664652c8",
+    "role": "assistant",
+    "content": "Voici la liste complète des présidents américains, du premier président de l'Union à nos jours :\n\n1. George Washington (1789-1797)\n2. John Adams (1797-1801)\n3. Thomas Jefferson (1801-1809)\n4. James Madison (1809-1817)\n5. James Monroe (1817-1825)\n6. John Quincy Adams (1825-1829)\n7. Andrew Jackson (1829-1837)\n8. Martin Van Buren (1837-1841)\n9. William Henry Harrison (1841-1841)\n10. John Tyler (1841-1845)\n11. James K. Polk (1845-1849)\n12. Zachary Taylor (1849-1850)\n13. Millard Fillmore (1850-1853)\n14. Franklin Pierce (1853-1857)\n15. James Buchanan (1857-1861)\n16. Abraham Lincoln (1861-1865)\n17. Andrew Johnson (1865-1869)\n18. Ulysses S. Grant (1869-1877)\n19. Rutherford B. Hayes (1877-1881)\n20. James A. Garfield (1881-1881)\n21. Chester A. Arthur (1881-1885)\n22. Grover Cleveland (1885-1889)\n23. Benjamin Harrison (1889-1893)\n24. Grover Cleveland (1893-1897)\n25. William McKinley (1897-1901)\n26. Theodore Roosevelt (1901-1909)\n27. William Howard Taft (1909-1913)\n28. Woodrow Wilson (1913-1921)\n29. Warren G. Harding (1921-1923)\n30. Calvin Coolidge (1923-1929)\n31. Herbert Hoover (1929-1933)\n32. Franklin D. Roosevelt (1933-1945)\n33. Harry S. Truman (1945-1953)\n34. Dwight D. Eisenhower (1953-1961)\n35. John F. Kennedy (1961-1963)\n36. Lyndon B. Johnson (1963-1969)\n37. Richard Nixon (1969-1974)\n38. Gerald R. Ford (1974-1977)\n39. Jimmy Carter (1977-1981)\n40. Ronald Reagan (1981-1989)\n41. George H.W. Bush (1989-1993)\n42. Bill Clinton (1993-2001)\n43. George W. Bush (2001-2009)\n44. Barack Obama (2009-2017)\n45. Donald J. Trump (2017-2021)\n46. Joe Biden (2021-present)\n\nNote : John F. Kennedy est mort en office et a été remplacé par Lyndon B. Johnson, qui a terminé sa mission.\n\nJ'espère que cela vous aidera !",
+    "createdAt": "2026-01-21T09:04:30.509Z"
   }
 ]
