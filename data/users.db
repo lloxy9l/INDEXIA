@@ -8,5 +8,15 @@
     "firstName": "Baptiste",
     "lastName": "Renand",
     "service": "IT"
+  },
+  {
+    "id": "e52b42e5-e2c4-41b5-bc4d-3242ed8c8446",
+    "email": "s@s.com",
+    "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "createdAt": "2026-01-21T09:53:27.750Z",
+    "admin": true,
+    "firstName": "Maxens",
+    "lastName": "Soldan",
+    "service": "IT"
   }
 ]

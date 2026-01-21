@@ -166,6 +166,7 @@ export default function ChatPage() {
   const [modelError, setModelError] = useState("")
   const [open, setOpen] = useState(false)
   const [ragEnabled, setRagEnabled] = useState(false)
+  const [ragPipeline, setRagPipeline] = useState("standard")
   const [message, setMessage] = useState("")
   const [chatHistory, setChatHistory] = useState<
     {
@@ -303,6 +304,7 @@ export default function ChatPage() {
           model: modelId,
           messages,
           ragEnabled,
+          ragPipeline,
         }),
       })
 
@@ -2371,6 +2373,17 @@ export default function ChatPage() {
                       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         RAG
                       </span>
+                      <select
+                        value={ragPipeline}
+                        onChange={(e) => setRagPipeline(e.target.value)}
+                        disabled={!ragEnabled}
+                        className="h-8 rounded-full border border-border/70 bg-background/70 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm transition disabled:opacity-50"
+                      >
+                        <option value="standard">Standard</option>
+                        <option value="rerank">Re-ranking</option>
+                        <option value="multi">Multi-query</option>
+                        <option value="agent">Agent</option>
+                      </select>
                     </div>
                     <span className="text-[11px] text-muted-foreground hidden md:inline">
                       Recherche avant r&eacute;ponse
