@@ -21,6 +21,13 @@ type RequestStats = {
   p95Ms24h: number | null
 }
 
+type QualityStats = {
+  coveragePct: number | null
+  coverageDeltaPct: number | null
+  errorPct: number | null
+  errorDeltaPct: number | null
+}
+
 const formatCompact = (value: number) => {
   const trim = (num: number) => {
     const fixed = num.toFixed(1)
@@ -46,8 +53,16 @@ const formatSeconds = (valueMs: number) => {
   return fixed.endsWith(".0") ? fixed.slice(0, -2) : fixed
 }
 
+const formatPercent = (value: number) => {
+  const fixed = value >= 10 ? value.toFixed(0) : value.toFixed(1)
+  return fixed.endsWith(".0") ? fixed.slice(0, -2) : fixed
+}
+
 export function SectionCards() {
   const [requestStats, setRequestStats] = React.useState<RequestStats | null>(
+    null
+  )
+  const [qualityStats, setQualityStats] = React.useState<QualityStats | null>(
     null
   )
 
@@ -55,12 +70,23 @@ export function SectionCards() {
     let cancelled = false
     const load = async () => {
       try {
-        const res = await fetch("/api/metrics/requests", { cache: "no-store" })
-        if (!res.ok) return
-        const payload = (await res.json()) as RequestStats
-        if (!cancelled) setRequestStats(payload)
+        const [requestsRes, qualityRes] = await Promise.all([
+          fetch("/api/metrics/requests", { cache: "no-store" }),
+          fetch("/api/metrics/quality", { cache: "no-store" }),
+        ])
+        if (requestsRes.ok) {
+          const payload = (await requestsRes.json()) as RequestStats
+          if (!cancelled) setRequestStats(payload)
+        }
+        if (qualityRes.ok) {
+          const payload = (await qualityRes.json()) as QualityStats
+          if (!cancelled) setQualityStats(payload)
+        }
       } catch {
-        if (!cancelled) setRequestStats(null)
+        if (!cancelled) {
+          setRequestStats(null)
+          setQualityStats(null)
+        }
       }
     }
 
@@ -95,12 +121,38 @@ export function SectionCards() {
       : requestStats.avgMsDeltaPct
   const latencyDeltaLabel =
     latencyDelta == null ? "--" : formatDelta(latencyDelta)
-  const latencyImproved = latencyDelta != null && latencyDelta < 0
-  const latencyWorse = latencyDelta != null && latencyDelta > 0
+  const latencyTrendUp = latencyDelta != null && latencyDelta >= 0
   const latencyBadgeClass =
     latencyDelta == null
       ? "bg-muted text-muted-foreground dark:bg-muted/60 dark:text-muted-foreground"
-      : latencyImproved
+      : latencyTrendUp
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200"
+      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200"
+
+  const coveragePct = qualityStats?.coveragePct ?? null
+  const coverageLabel = coveragePct == null ? "--" : `${formatPercent(coveragePct)}%`
+  const coverageDelta =
+    qualityStats?.coverageDeltaPct == null ? null : qualityStats.coverageDeltaPct
+  const coverageDeltaLabel =
+    coverageDelta == null ? "--" : formatDelta(coverageDelta)
+  const coverageTrendUp = coverageDelta != null && coverageDelta >= 0
+  const coverageBadgeClass =
+    coverageDelta == null
+      ? "bg-muted text-muted-foreground dark:bg-muted/60 dark:text-muted-foreground"
+      : coverageTrendUp
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200"
+      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200"
+
+  const errorPct = qualityStats?.errorPct ?? null
+  const errorLabel = errorPct == null ? "--" : `${formatPercent(errorPct)}%`
+  const errorDelta =
+    qualityStats?.errorDeltaPct == null ? null : qualityStats.errorDeltaPct
+  const errorDeltaLabel = errorDelta == null ? "--" : formatDelta(errorDelta)
+  const errorTrendUp = errorDelta != null && errorDelta >= 0
+  const errorBadgeClass =
+    errorDelta == null
+      ? "bg-muted text-muted-foreground dark:bg-muted/60 dark:text-muted-foreground"
+      : errorTrendUp
       ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200"
       : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200"
 
@@ -138,11 +190,11 @@ export function SectionCards() {
           </CardTitle>
           <CardAction>
             <Badge className={latencyBadgeClass}>
-              {latencyDelta == null ? null : latencyImproved ? (
-                <IconTrendingDown />
-              ) : latencyWorse ? (
+              {latencyDelta == null ? null : latencyTrendUp ? (
                 <IconTrendingUp />
-              ) : null}
+              ) : (
+                <IconTrendingDown />
+              )}
               {latencyDeltaLabel}
             </Badge>
           </CardAction>
@@ -158,12 +210,16 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Réponses avec sources suffisantes</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            87%
+            {coverageLabel}
           </CardTitle>
           <CardAction>
-            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200">
-              <IconTrendingUp />
-              +4.1%
+            <Badge className={coverageBadgeClass}>
+              {coverageDelta == null ? null : coverageTrendUp ? (
+                <IconTrendingUp />
+              ) : (
+                <IconTrendingDown />
+              )}
+              {coverageDeltaLabel}
             </Badge>
           </CardAction>
         </CardHeader>
@@ -180,12 +236,16 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Erreurs / timeout / pas de résultat</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            3.2%
+            {errorLabel}
           </CardTitle>
           <CardAction>
-            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-200">
-              <IconTrendingDown />
-              -1.1%
+            <Badge className={errorBadgeClass}>
+              {errorDelta == null ? null : errorTrendUp ? (
+                <IconTrendingUp />
+              ) : (
+                <IconTrendingDown />
+              )}
+              {errorDeltaLabel}
             </Badge>
           </CardAction>
         </CardHeader>
