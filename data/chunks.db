@@ -49,5 +49,22 @@
     "chunk_index": 2,
     "created_at": "2026-01-21T09:39:40.531Z",
     "document_ref": "DOC-FS-polytech.txt"
+  },
+  {
+    "chunk_id": "16f4b11d-6792-400d-bc24-b24dd593f2b8",
+    "text": "Respect du règlement intérieur ● Porte systématiquement les équipements de protection individuelle (EPI) sur les postes à risques. ● Suit les consignes de sécurité et signale toute situation dangereuse à sa hiérarchie. ● Utilise les outils informatiques uniquement dans le cadre professionnel, conformément à la charte informatique. ● Respecte les horaires de travail, badge à l’entrée et à la sortie, et justifie toute absence. ● Ne consomme ni alcool ni stupéfiants sur le lieu de travail, conformément aux règles de sécurité.\n\nAppropriation des valeurs et de la culture d’entreprise ● Adopte un comportement éthique : refuse les cadeaux non autorisés, respecte la confidentialité des données. ● Participe aux formations sur l’éthique et la sécurité. ● Respecte les autres collaborateurs, sans propos déplacés ni comportements sexistes ou discriminatoires. ● S’implique dans la vie de l’entreprise, respecte les règles de communication et de représentation. ● Applique les principes de loyauté, transparence et intégrité dans ses relations professionnelles.",
+    "start_char": 0,
+    "end_char": 1059,
+    "token_count": 155,
+    "metadata": {
+      "mode": "semantic-bert",
+      "model": "Xenova/paraphrase-multilingual-MiniLM-L12-v2",
+      "similarity_threshold": 0.62
+    },
+    "document_id": 1874478934,
+    "filename": "TC3_APT1.pdf",
+    "chunk_index": 0,
+    "created_at": "2026-01-21T12:48:23.921Z",
+    "document_ref": "DOC-FS-TC3_APT1.pdf"
   }
 ]

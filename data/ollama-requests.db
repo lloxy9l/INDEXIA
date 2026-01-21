@@ -79,5 +79,20 @@
     "durationMs": 3365,
     "createdAt": "2026-01-21T10:15:56.457Z",
     "pipeline": "agent"
+  },
+  {
+    "id": "1afa4f68-a41a-4bd8-86bb-a9c40b9a7cfe",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 5122,
+    "createdAt": "2026-01-21T12:46:17.563Z"
+  },
+  {
+    "id": "d3b884e6-1ea0-406e-9d77-372b814ce0ca",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 5437,
+    "createdAt": "2026-01-21T12:47:03.498Z",
+    "pipeline": "standard"
   }
 ]

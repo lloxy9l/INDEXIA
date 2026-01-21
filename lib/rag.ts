@@ -1,6 +1,7 @@
 import { readChunks, type ChunkRecord } from "@/lib/chunks"
 import { readDocuments } from "@/lib/documents"
 import { canAccessDocument, type AccessContext } from "@/lib/permissions"
+import { searchVectorStore } from "@/lib/vector-store"
 
 export type RagSource = {
   id: string
@@ -203,29 +204,39 @@ export async function retrieveRagSources(
 ): Promise<RagSource[]> {
   const pipeline = options.pipeline ?? "standard"
   const limit = Math.max(1, Math.floor(options.limit ?? DEFAULT_LIMIT))
+  const baseOptions = { ...options, limit }
+
+  const retrieveBase = async (input: string) => {
+    const vector = await searchVectorStore(input, {
+      limit,
+      maxChars: options.maxChars ?? DEFAULT_MAX_CHARS,
+      access: options.access,
+    })
+    if (vector.length > 0) return vector
+    return retrieveRelevantChunks(input, baseOptions)
+  }
 
   if (pipeline === "standard") {
-    return retrieveRelevantChunks(query, options)
+    return retrieveBase(query)
   }
 
   if (pipeline === "rerank") {
-    const candidates = await retrieveRelevantChunks(query, {
-      ...options,
-      limit: Math.max(limit * 3, limit),
-      minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
-    })
-    return rerankSources(candidates, query).slice(0, limit)
+    const candidates = await retrieveBase(query)
+    const expanded = candidates.length >= limit
+      ? candidates
+      : await retrieveRelevantChunks(query, {
+        ...options,
+        limit: Math.max(limit * 3, limit),
+        minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
+      })
+    return rerankSources(expanded, query).slice(0, limit)
   }
 
   if (pipeline === "multi") {
     const queries = buildMultiQueries(query)
     const results = await Promise.all(
       queries.map((variant) =>
-        retrieveRelevantChunks(variant, {
-          ...options,
-          limit: Math.max(limit * 2, limit),
-          minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
-        })
+        retrieveBase(variant)
       )
     )
     const merged = new Map<string, RagSource>()
@@ -238,11 +249,7 @@ export async function retrieveRagSources(
     return rerankSources(Array.from(merged.values()), query).slice(0, limit)
   }
 
-  const initial = await retrieveRelevantChunks(query, {
-    ...options,
-    limit: Math.max(limit * 2, limit),
-    minScore: Math.max(1, Math.floor(options.minScore ?? DEFAULT_MIN_SCORE)),
-  })
+  const initial = await retrieveBase(query)
   if (initial.length >= limit) {
     return rerankSources(initial, query).slice(0, limit)
   }
