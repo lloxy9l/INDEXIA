@@ -1,34 +1,18 @@
 [
   {
-    "id": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "15819949-76de-4129-ba4d-628bf4246235",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "projectId": null,
     "title": "Nouveau chat 1",
-    "createdAt": "2026-01-13T09:02:54.339Z",
-    "updatedAt": "2026-01-13T09:02:54.339Z"
+    "createdAt": "2026-01-21T09:37:49.645Z",
+    "updatedAt": "2026-01-21T09:37:49.645Z"
   },
   {
-    "id": "27389077-e647-4dd3-9c62-b47890cea83d",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "38c76cc7-1362-4f07-8b92-c33996a302b5",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "projectId": null,
     "title": "Nouveau chat 2",
-    "createdAt": "2026-01-13T13:18:01.092Z",
-    "updatedAt": "2026-01-13T13:18:01.092Z"
-  },
-  {
-    "id": "41bd38d0-8b99-450e-852c-47805cd802aa",
-    "userId": "477c7d7c-bd4a-4815-890e-988b664652c8",
-    "projectId": null,
-    "title": "Nouveau chat 1",
-    "createdAt": "2026-01-21T09:03:47.913Z",
-    "updatedAt": "2026-01-21T09:03:47.913Z"
-  },
-  {
-    "id": "a2d4aa6f-ce1e-4f96-93dd-954bebc35484",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
-    "projectId": null,
-    "title": "Nouveau chat 3",
-    "createdAt": "2026-01-21T09:12:09.814Z",
-    "updatedAt": "2026-01-21T09:12:09.814Z"
+    "createdAt": "2026-01-21T09:38:59.867Z",
+    "updatedAt": "2026-01-21T09:38:59.867Z"
   }
 ]

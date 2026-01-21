@@ -1,32 +1,32 @@
 [
   {
-    "id": "0876e2a2-a843-4df8-bb62-30c7189412a3",
-    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "0afcc195-1fae-40b3-93db-7aa48c65e894",
+    "chatId": "15819949-76de-4129-ba4d-628bf4246235",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "role": "user",
-    "content": "donne moi les infos sur le fichier 1.pdf",
-    "createdAt": "2026-01-13T09:02:54.354Z"
+    "content": "Bonjour !",
+    "createdAt": "2026-01-21T09:37:49.654Z"
   },
   {
-    "id": "662a7c31-7f26-4b70-bb5e-76c120f86b81",
-    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "afa6065b-6c36-4448-9e1d-89fd942ee737",
+    "chatId": "15819949-76de-4129-ba4d-628bf4246235",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "role": "assistant",
-    "content": "Je ne peux pas repondre avec les documents disponibles.",
-    "createdAt": "2026-01-13T09:02:57.730Z"
+    "content": "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
+    "createdAt": "2026-01-21T09:37:52.112Z"
   },
   {
-    "id": "d136562d-c642-458d-ac54-791ba8d600a1",
-    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "57e506f8-40f8-47f4-9a2a-ab06ffafe9c0",
+    "chatId": "38c76cc7-1362-4f07-8b92-c33996a302b5",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "role": "user",
-    "content": "dis le",
-    "createdAt": "2026-01-13T09:03:45.844Z"
+    "content": "C'est quoi Polytech ?",
+    "createdAt": "2026-01-21T09:40:26.920Z"
   },
   {
-    "id": "1086d025-3847-45fe-b8b1-fb97a4bc1c77",
-    "chatId": "c2ae2810-6e4f-42a0-90db-52efb48654e5",
-    "userId": "4394b19f-527e-4b6f-ac8d-0e0eec944001",
+    "id": "0e519fce-879d-4998-b1d2-248f4d1c7b51",
+    "chatId": "38c76cc7-1362-4f07-8b92-c33996a302b5",
+    "userId": "c7808c8c-8834-42dc-b5b4-27b0bbe0892e",
     "role": "assistant",
     "content": "Je vais vous donner des informations sur le sujet mentionné dans le fichier 1.pdf, qui concerne le communisme et le nationalisme.\n\nAu XXe siècle, les groupes locaux qui avaient adopté les valeurs occidentales revendiquèrent l'égalité avec leurs conquérants européens au nom de ces mêmes valeurs. Cela montre que la notion d'égalité est souvent liée aux valeurs occidentales et qu'elle peut être utilisée pour justifier une rébellion contre les puissances coloniales.\n\nLa notion de cycle impérial est également présentée, qui décrit le cycle suivant :\n\n* Stade Rome : Un petit groupe crée un grand empire\n* Stade Islam : Les Arabes créent le califat\n* Stade Impérialisme européen : Les Européens créent les empires européens\n\nCela suggère que l'impérialisme est un phénomène répétitif à travers l'histoire, avec des empires qui surgissent et qui tombent.\n\nLa fichier 1.pdf semble aborder également le sujet du communisme et de son lien avec le nationalisme. Cependant, je ne peux pas trouver d'informations spécifiques sur ce sujet dans le fichier 1.pdf, car il est principalement composé de textes génériques qui traitent des thèmes plus larges.\n\nJe ne peux pas fournir plus d'informations sur les fichiers 2.pdf et 3.pdf car ils n'ont pas été fournis.",
     "createdAt": "2026-01-13T09:03:58.908Z"
