@@ -396,6 +396,29 @@ const requestDetail = {
   },
 }
 
+const defaultSystemPrompt =
+  "Tu es un assistant qui répond uniquement à partir des sources fournies."
+
+const buildFinalPrompt = (detail: typeof requestDetail) => {
+  const lines = ["SYSTEM:", defaultSystemPrompt, "", "CONTEXT:"]
+  if (detail.retrieval.length === 0) {
+    lines.push("Aucun contexte disponible.", "")
+  } else {
+    detail.retrieval.forEach((chunk) => {
+      const labelParts = [
+        `Chunk ${chunk.chunkId}`,
+        chunk.doc,
+        chunk.page ? chunk.page : "",
+      ].filter(Boolean)
+      lines.push(`[${labelParts.join(" - ")}]`)
+      lines.push(chunk.preview || "—")
+      lines.push("")
+    })
+  }
+  lines.push("QUESTION:", detail.question || "—")
+  return lines.join("\n").trimEnd()
+}
+
 const activityStats = {
   requestsToday: 248,
   avgResponseMs: 420,
@@ -693,6 +716,13 @@ export default function Page() {
   )
   const [requestLogsLoading, setRequestLogsLoading] = React.useState(true)
   const [requestLogsError, setRequestLogsError] = React.useState("")
+  const [logsTab, setLogsTab] = React.useState("requetes")
+  const [selectedRequestDetail, setSelectedRequestDetail] =
+    React.useState(requestDetail)
+  const finalPrompt = React.useMemo(
+    () => buildFinalPrompt(selectedRequestDetail),
+    [selectedRequestDetail]
+  )
   const documentsFs = React.useMemo(
     () => documentsState.filter((doc) => doc.id.startsWith("DOC-FS-")),
     [documentsState]
@@ -728,6 +758,33 @@ export default function Page() {
       timeStyle: "short",
     }).format(date)
   }, [])
+  const getLogDetail = React.useCallback(
+    (log: RequestLogItem) => {
+      const hasRag = Boolean(log.pipeline)
+      return {
+        ...requestDetail,
+        question: log.question,
+        user: log.user,
+        datetime: formatLogDate(log.createdAt),
+        model: log.model ?? "—",
+        pipeline: log.pipeline ?? "Sans RAG",
+        retrieval: hasRag ? requestDetail.retrieval : [],
+        reranking: hasRag
+          ? requestDetail.reranking
+          : { enabled: false, before: [], after: [], removed: [] },
+        answer: {
+          ...requestDetail.answer,
+          sources: hasRag ? requestDetail.answer.sources : [],
+        },
+        params: {
+          ...requestDetail.params,
+          totalTime:
+            log.durationMs != null ? `${Math.round(log.durationMs)} ms` : "—",
+        },
+      }
+    },
+    [formatLogDate]
+  )
 
   const toggleUploadService = React.useCallback((service: string) => {
     setUploadServices((prev) =>
@@ -2676,13 +2733,12 @@ export default function Page() {
                 <div className="px-4 lg:px-6">{benchmarkView}</div>
               ) : activeSection === "Logs & Activité" ? (
                 <div className="px-4 lg:px-6 space-y-4">
-                  <Tabs defaultValue="requetes" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-5">
+                  <Tabs value={logsTab} onValueChange={setLogsTab} className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="requetes">Historique requêtes</TabsTrigger>
                       <TabsTrigger value="systeme">Activité système</TabsTrigger>
                       <TabsTrigger value="erreurs">Erreurs & alertes</TabsTrigger>
                       <TabsTrigger value="detail">Détail requête</TabsTrigger>
-                      <TabsTrigger value="stats">Stats activité</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="requetes" className="space-y-4">
@@ -2733,7 +2789,7 @@ export default function Page() {
                                       {log.question}
                                     </TableCell>
                                     <TableCell>{log.model ?? "—"}</TableCell>
-                                    <TableCell>{log.pipeline ?? "RAG"}</TableCell>
+                                    <TableCell>{log.pipeline ?? "Sans RAG"}</TableCell>
                                     <TableCell>
                                       {log.durationMs != null
                                         ? `${Math.round(log.durationMs)} ms`
@@ -2759,7 +2815,14 @@ export default function Page() {
                                       </Badge>
                                     </TableCell>
                                     <TableCell>
-                                      <Button size="sm" variant="outline">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setSelectedRequestDetail(getLogDetail(log))
+                                          setLogsTab("detail")
+                                        }}
+                                      >
                                         Voir détails
                                       </Button>
                                     </TableCell>
@@ -2867,30 +2930,30 @@ export default function Page() {
                           <CardContent className="grid gap-2 text-sm">
                             <div>
                               <span className="font-medium">Question :</span>{" "}
-                              {requestDetail.question}
+                              {selectedRequestDetail.question}
                             </div>
                             <div>
                               <span className="font-medium">Utilisateur :</span>{" "}
-                              {requestDetail.user}
+                              {selectedRequestDetail.user}
                             </div>
                             <div>
                               <span className="font-medium">Date / heure :</span>{" "}
-                              {requestDetail.datetime}
+                              {selectedRequestDetail.datetime}
                             </div>
                             <div>
                               <span className="font-medium">Modèle LLM :</span>{" "}
-                              {requestDetail.model}
+                              {selectedRequestDetail.model}
                             </div>
                             <div>
                               <span className="font-medium">Pipeline :</span>{" "}
-                              {requestDetail.pipeline}
+                              {selectedRequestDetail.pipeline}
                             </div>
                             <div className="grid grid-cols-2 gap-2 pt-2 text-muted-foreground">
-                              <div>top_k : {requestDetail.params.topK}</div>
-                              <div>chunk_size : {requestDetail.params.chunkSize}</div>
-                              <div>overlap : {requestDetail.params.overlap}</div>
-                              <div>re-ranking : {requestDetail.params.rerank}</div>
-                              <div>Temps total : {requestDetail.params.totalTime}</div>
+                              <div>top_k : {selectedRequestDetail.params.topK}</div>
+                              <div>chunk_size : {selectedRequestDetail.params.chunkSize}</div>
+                              <div>overlap : {selectedRequestDetail.params.overlap}</div>
+                              <div>re-ranking : {selectedRequestDetail.params.rerank}</div>
+                              <div>Temps total : {selectedRequestDetail.params.totalTime}</div>
                             </div>
                           </CardContent>
                         </Card>
@@ -2902,22 +2965,22 @@ export default function Page() {
                           <CardContent className="grid gap-2 text-sm">
                             <div>
                               <span className="font-medium">Texte :</span>{" "}
-                              {requestDetail.embedding.text}
+                              {selectedRequestDetail.embedding.text}
                             </div>
                             <div>
                               <span className="font-medium">Dimension :</span>{" "}
-                              {requestDetail.embedding.dim}
+                              {selectedRequestDetail.embedding.dim}
                             </div>
                             <div>
                               <span className="font-medium">Modèle :</span>{" "}
-                              {requestDetail.embedding.model}
+                              {selectedRequestDetail.embedding.model}
                             </div>
                             <div>
                               <span className="font-medium">Norme :</span>{" "}
-                              {requestDetail.embedding.norm}
+                              {selectedRequestDetail.embedding.norm}
                             </div>
                             <div className="break-words text-xs text-muted-foreground">
-                              Aperçu : {requestDetail.embedding.preview}
+                              Aperçu : {selectedRequestDetail.embedding.preview}
                             </div>
                           </CardContent>
                         </Card>
@@ -2940,23 +3003,36 @@ export default function Page() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {requestDetail.retrieval.map((chunk) => (
-                                <TableRow key={chunk.chunkId}>
-                                  <TableCell>{chunk.rank}</TableCell>
-                                  <TableCell>{chunk.score}</TableCell>
-                                  <TableCell>{chunk.doc}</TableCell>
-                                  <TableCell>{chunk.chunkId}</TableCell>
-                                  <TableCell>{chunk.page}</TableCell>
-                                  <TableCell className="max-w-md truncate">
-                                    {chunk.preview}
+                              {selectedRequestDetail.retrieval.length === 0 ? (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={6}
+                                    className="text-center text-sm text-muted-foreground"
+                                  >
+                                    {selectedRequestDetail.pipeline === "Sans RAG"
+                                      ? "Aucun chunk (Sans RAG)."
+                                      : "Aucun chunk disponible."}
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                              ) : (
+                                selectedRequestDetail.retrieval.map((chunk) => (
+                                  <TableRow key={chunk.chunkId}>
+                                    <TableCell>{chunk.rank}</TableCell>
+                                    <TableCell>{chunk.score}</TableCell>
+                                    <TableCell>{chunk.doc}</TableCell>
+                                    <TableCell>{chunk.chunkId}</TableCell>
+                                    <TableCell>{chunk.page}</TableCell>
+                                    <TableCell className="max-w-md truncate">
+                                      {chunk.preview}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
                             </TableBody>
                           </Table>
                         </CardContent>
                       </Card>
-                      {requestDetail.reranking.enabled ? (
+                      {selectedRequestDetail.reranking.enabled ? (
                         <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
                           <CardHeader>
                             <CardTitle>Re-ranking</CardTitle>
@@ -2966,7 +3042,7 @@ export default function Page() {
                             <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
                               <div className="font-medium">Ordre avant</div>
                               <div className="mt-2 space-y-1 text-muted-foreground">
-                                {requestDetail.reranking.before.map((item) => (
+                                {selectedRequestDetail.reranking.before.map((item) => (
                                   <div key={item.chunkId}>
                                     {item.chunkId} · rang {item.rank} · score {item.score}
                                   </div>
@@ -2976,7 +3052,7 @@ export default function Page() {
                             <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
                               <div className="font-medium">Ordre après</div>
                               <div className="mt-2 space-y-1 text-muted-foreground">
-                                {requestDetail.reranking.after.map((item) => (
+                                {selectedRequestDetail.reranking.after.map((item) => (
                                   <div key={item.chunkId}>
                                     {item.chunkId} · rang {item.rank} · score {item.score}
                                   </div>
@@ -2986,8 +3062,8 @@ export default function Page() {
                             <div className="rounded-md border border-primary/10 bg-background p-3 text-sm">
                               <div className="font-medium">Chunks supprimés</div>
                               <div className="mt-2 space-y-1 text-muted-foreground">
-                                {requestDetail.reranking.removed.length
-                                  ? requestDetail.reranking.removed.map((item) => (
+                                {selectedRequestDetail.reranking.removed.length
+                                  ? selectedRequestDetail.reranking.removed.map((item) => (
                                       <div key={item.chunkId}>
                                         {item.chunkId} · {item.reason}
                                       </div>
@@ -3005,7 +3081,7 @@ export default function Page() {
                         </CardHeader>
                         <CardContent>
                           <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">
-                            {requestDetail.prompt}
+                            {finalPrompt}
                           </pre>
                         </CardContent>
                       </Card>
@@ -3015,13 +3091,13 @@ export default function Page() {
                           <CardDescription>Résultat final du modèle</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-3 text-sm">
-                          <div>{requestDetail.answer.text}</div>
+                          <div>{selectedRequestDetail.answer.text}</div>
                           <div className="text-muted-foreground">
-                            Temps : {requestDetail.answer.time} · Tokens :{" "}
-                            {requestDetail.answer.tokens}
+                            Temps : {selectedRequestDetail.answer.time} · Tokens :{" "}
+                            {selectedRequestDetail.answer.tokens}
                           </div>
                           <div className="text-muted-foreground">
-                            Note qualité : {requestDetail.answer.quality}/5
+                            Note qualité : {selectedRequestDetail.answer.quality}/5
                           </div>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline">
@@ -3041,13 +3117,26 @@ export default function Page() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {requestDetail.answer.sources.map((source) => (
-                                  <TableRow key={`${source.doc}-${source.chunkId}`}>
-                                    <TableCell>{source.doc}</TableCell>
-                                    <TableCell>{source.chunkId}</TableCell>
-                                    <TableCell>{source.page}</TableCell>
+                                {selectedRequestDetail.answer.sources.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={3}
+                                      className="text-center text-sm text-muted-foreground"
+                                    >
+                                      {selectedRequestDetail.pipeline === "Sans RAG"
+                                        ? "Aucune source (Sans RAG)."
+                                        : "Aucune source disponible."}
+                                    </TableCell>
                                   </TableRow>
-                                ))}
+                                ) : (
+                                  selectedRequestDetail.answer.sources.map((source) => (
+                                    <TableRow key={`${source.doc}-${source.chunkId}`}>
+                                      <TableCell>{source.doc}</TableCell>
+                                      <TableCell>{source.chunkId}</TableCell>
+                                      <TableCell>{source.page}</TableCell>
+                                    </TableRow>
+                                  ))
+                                )}
                               </TableBody>
                             </Table>
                           </div>
@@ -3055,58 +3144,6 @@ export default function Page() {
                       </Card>
                     </TabsContent>
 
-                    <TabsContent value="stats" className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-4">
-                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
-                          <CardHeader>
-                            <CardDescription>Requêtes (24h)</CardDescription>
-                            <CardTitle className="text-2xl font-semibold tabular-nums">
-                              {activityStats.requestsToday}
-                            </CardTitle>
-                          </CardHeader>
-                        </Card>
-                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
-                          <CardHeader>
-                            <CardDescription>Temps moyen</CardDescription>
-                            <CardTitle className="text-2xl font-semibold tabular-nums">
-                              {activityStats.avgResponseMs} ms
-                            </CardTitle>
-                          </CardHeader>
-                        </Card>
-                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
-                          <CardHeader>
-                            <CardDescription>Erreurs (24h)</CardDescription>
-                            <CardTitle className="text-2xl font-semibold tabular-nums">
-                              {activityStats.errors}
-                            </CardTitle>
-                          </CardHeader>
-                        </Card>
-                        <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
-                          <CardHeader>
-                            <CardDescription>Top utilisateurs</CardDescription>
-                            <CardTitle className="text-2xl font-semibold tabular-nums">
-                              {topUsers.length}
-                            </CardTitle>
-                          </CardHeader>
-                        </Card>
-                      </div>
-                      <Card className="shadow-none bg-white/80 dark:bg-card border border-primary/15">
-                        <CardHeader>
-                          <CardTitle>Top utilisateurs actifs</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-wrap gap-2 text-sm">
-                          {topUsers.map((u) => (
-                            <Badge
-                              key={u.name}
-                              variant="outline"
-                              className="bg-primary/10 text-foreground"
-                            >
-                              {u.name}
-                            </Badge>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
                   </Tabs>
                 </div>
               ) : (

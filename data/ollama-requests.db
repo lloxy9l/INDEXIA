@@ -308,5 +308,44 @@
     "model": "llama3.2",
     "durationMs": 185,
     "createdAt": "2026-01-21T09:04:21.348Z"
+  },
+  {
+    "id": "f0b6e52b-ab33-4b0d-b206-77f57e8cd22b",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 4417,
+    "createdAt": "2026-01-21T09:12:33.005Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "fde32876-921f-46e7-9b91-de77dc92b37d",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 1881,
+    "createdAt": "2026-01-21T09:12:42.153Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "1562ce6d-d547-4253-a833-fa58f8b21f9f",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2755,
+    "createdAt": "2026-01-21T09:27:55.527Z"
+  },
+  {
+    "id": "9e4144df-f441-4b0f-9b83-ecfffd571be0",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 1282,
+    "createdAt": "2026-01-21T09:29:06.559Z",
+    "pipeline": "ragStandard"
+  },
+  {
+    "id": "ba81cf24-9d7a-46b4-8298-0bb943e0de5a",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 1235,
+    "createdAt": "2026-01-21T09:29:14.581Z",
+    "pipeline": "ragStandard"
   }
 ]
