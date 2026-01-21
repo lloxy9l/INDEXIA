@@ -22,9 +22,9 @@
     "email": "b@b.b",
     "passwordHash": "fb398cc690e15ddba43ee811b6c0d3ec190901ad3df377fec9a1f9004b919a06",
     "createdAt": "2026-01-19T09:21:57.851Z",
-    "admin": false,
-    "firstName": "user",
-    "lastName": "43633396",
+    "admin": true,
+    "firstName": "Baptiste",
+    "lastName": "LOL",
     "service": "IT"
   }
 ]

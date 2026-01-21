@@ -294,5 +294,19 @@
     "model": "llama3.2",
     "durationMs": 2,
     "createdAt": "2026-01-20T08:17:54.760Z"
+  },
+  {
+    "id": "cd2ad6e9-93e1-4efc-a02e-095d0eae6273",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 2777,
+    "createdAt": "2026-01-21T09:04:00.225Z"
+  },
+  {
+    "id": "3a34b91d-005e-469a-9308-ab3bd50bfff8",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 185,
+    "createdAt": "2026-01-21T09:04:21.348Z"
   }
 ]
