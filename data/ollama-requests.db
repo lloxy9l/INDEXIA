@@ -94,5 +94,19 @@
     "durationMs": 5437,
     "createdAt": "2026-01-21T12:47:03.498Z",
     "pipeline": "standard"
+  },
+  {
+    "id": "00526558-904c-4165-afac-6f205882233c",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 16661,
+    "createdAt": "2026-02-26T08:46:18.896Z"
+  },
+  {
+    "id": "869883de-518d-4415-b214-2e515ba71bff",
+    "status": "ok",
+    "model": "llama3.2",
+    "durationMs": 445,
+    "createdAt": "2026-02-26T08:46:26.263Z"
   }
 ]

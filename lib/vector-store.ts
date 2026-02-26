@@ -1,4 +1,3 @@
-import { IndexFlatIP } from "faiss-node"
 import { promises as fs } from "fs"
 import path from "path"
 
@@ -11,6 +10,24 @@ const INDEX_PATH = path.join(process.cwd(), "data", "faiss.index")
 const META_PATH = path.join(process.cwd(), "data", "faiss.meta.json")
 const EMBED_MODEL = "Xenova/all-MiniLM-L6-v2"
 const BATCH_SIZE = 16
+
+type FaissSearchResult = {
+  labels: number[]
+  distances: number[]
+}
+
+type FaissIndex = {
+  add: (values: number[]) => void
+  search: (query: number[], k: number) => FaissSearchResult
+  write: (indexPath: string) => void
+}
+
+type FaissModule = {
+  IndexFlatIP: {
+    new (dim: number): FaissIndex
+    read: (indexPath: string) => FaissIndex
+  }
+}
 
 type IndexMeta = {
   model: string
@@ -26,11 +43,24 @@ type IndexMeta = {
   }>
 }
 
-let cachedIndex: IndexFlatIP | null = null
+let cachedIndex: FaissIndex | null = null
 let cachedMeta: IndexMeta | null = null
-let indexPromise: Promise<IndexFlatIP | null> | null = null
+let indexPromise: Promise<FaissIndex | null> | null = null
 let embedderPromise: Promise<any> | null = null
 let embedderModel = ""
+let faissPromise: Promise<FaissModule | null> | null = null
+
+async function getFaiss(): Promise<FaissModule | null> {
+  if (faissPromise) return faissPromise
+  faissPromise = (async () => {
+    try {
+      return (await import("faiss-node")) as FaissModule
+    } catch {
+      return null
+    }
+  })()
+  return faissPromise
+}
 
 async function getEmbedder(model: string) {
   if (embedderPromise && embedderModel === model) return embedderPromise
@@ -87,7 +117,7 @@ async function readMeta(): Promise<IndexMeta | null> {
   }
 }
 
-async function loadIndexFromDisk(): Promise<IndexFlatIP | null> {
+async function loadIndexFromDisk(): Promise<FaissIndex | null> {
   const [meta, chunksStat] = await Promise.all([
     readMeta(),
     fs.stat(path.join(process.cwd(), "data", "chunks.db")).catch(() => null),
@@ -97,7 +127,9 @@ async function loadIndexFromDisk(): Promise<IndexFlatIP | null> {
   if (meta.chunksMtimeMs !== chunksStat.mtimeMs) return null
 
   try {
-    const index = IndexFlatIP.read(INDEX_PATH)
+    const faiss = await getFaiss()
+    if (!faiss) return null
+    const index = faiss.IndexFlatIP.read(INDEX_PATH)
     cachedMeta = meta
     cachedIndex = index
     return index
@@ -106,7 +138,10 @@ async function loadIndexFromDisk(): Promise<IndexFlatIP | null> {
   }
 }
 
-async function buildIndex(): Promise<IndexFlatIP | null> {
+async function buildIndex(): Promise<FaissIndex | null> {
+  const faiss = await getFaiss()
+  if (!faiss) return null
+
   const chunks = await readChunks()
   if (chunks.length === 0) return null
 
@@ -117,7 +152,7 @@ async function buildIndex(): Promise<IndexFlatIP | null> {
     text: chunk.text,
   }))
 
-  let index: IndexFlatIP | null = null
+  let index: FaissIndex | null = null
   let dim = 0
   for (let start = 0; start < metaChunks.length; start += BATCH_SIZE) {
     const slice = metaChunks.slice(start, start + BATCH_SIZE)
@@ -126,7 +161,7 @@ async function buildIndex(): Promise<IndexFlatIP | null> {
     if (!index) {
       dim = embeddings[0]?.length ?? 0
       if (!dim) return null
-      index = new IndexFlatIP(dim)
+      index = new faiss.IndexFlatIP(dim)
     }
     const flat = embeddings.flat()
     index.add(flat)
@@ -155,7 +190,7 @@ async function buildIndex(): Promise<IndexFlatIP | null> {
   return index
 }
 
-async function ensureIndex(): Promise<IndexFlatIP | null> {
+async function ensureIndex(): Promise<FaissIndex | null> {
   if (cachedIndex && cachedMeta) {
     const chunksStat = await fs
       .stat(path.join(process.cwd(), "data", "chunks.db"))
